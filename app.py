@@ -1,6 +1,7 @@
 import csv
 from datetime import date
 from io import StringIO
+import html
 import streamlit as st
 
 st.set_page_config(
@@ -8,6 +9,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+LINKEDIN_URL = "https://www.linkedin.com/in/kori-p-865jct"
+GITHUB_URL = "https://github.com/koripickle1101-TN"
+TENNESSEE_ORANGE = "#FF8200"
 
 DEFAULT_CASES = [
     {"Case ID":"REV-0001","Payer Group":"Commercial","Workflow Domain":"Patient Access","Service Line":"Orthopedics","Risk":"High","Owner":"Patient Access Lead","Days Open":7,"SLA Limit":5,"Exposure":18450,"Status":"Needs Documentation","Required Docs":"Order;Insurance Card;Clinical Note;Medical Necessity Note","Present Docs":"Order;Insurance Card","First Control Loss":"Documentation Control","Payer Rule":"Medical necessity narrative required before authorization submission.","Next Action":"Validate documentation packet and assign same day authorization follow up."},
@@ -35,33 +40,27 @@ CONTROL_DOMAINS = [
     ("Time Control", "Aging, SLA pressure, stalled work, and delay prevention before denial risk grows.")
 ]
 
-
 def money(value):
     return "${:,.0f}".format(float(value))
 
-
 def safe(value):
-    return str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
+    return html.escape(str(value))
 
 def split_docs(value):
     if isinstance(value, list):
         return value
     return [item.strip() for item in str(value).split(";") if item.strip()]
 
-
 def missing_docs(case):
     required = split_docs(case.get("Required Docs", ""))
     present = set(split_docs(case.get("Present Docs", "")))
     return [doc for doc in required if doc not in present]
-
 
 def readiness_score(case):
     doc_penalty = len(missing_docs(case)) * 13
     aging_penalty = max(0, int(case.get("Days Open", 0)) - int(case.get("SLA Limit", 0))) * 8
     risk_penalty = {"Low": 0, "Moderate": 7, "High": 17}.get(case.get("Risk"), 0)
     return max(0, min(100, 100 - doc_penalty - aging_penalty - risk_penalty))
-
 
 def workflow_loss_index(case):
     base = {"Low": 10, "Moderate": 30, "High": 50}.get(case.get("Risk"), 20)
@@ -72,7 +71,6 @@ def workflow_loss_index(case):
         score += 8
     return max(0, min(100, score))
 
-
 def loss_label(score):
     if score >= 76:
         return "Escalation Required"
@@ -82,27 +80,27 @@ def loss_label(score):
         return "Watch"
     return "Stable"
 
-
 def countdown(case):
     return int(case.get("SLA Limit", 0)) - int(case.get("Days Open", 0))
-
 
 def load_uploaded_cases(uploaded_file):
     if uploaded_file is None:
         return DEFAULT_CASES
-    text = uploaded_file.getvalue().decode("utf-8")
-    reader = csv.DictReader(StringIO(text))
-    rows = []
-    for row in reader:
-        clean = {column: row.get(column, "") for column in REQUIRED_COLUMNS}
-        for numeric in ["Days Open", "SLA Limit", "Exposure"]:
-            try:
-                clean[numeric] = int(float(clean[numeric]))
-            except Exception:
-                clean[numeric] = 0
-        rows.append(clean)
-    return rows if rows else DEFAULT_CASES
-
+    try:
+        text = uploaded_file.getvalue().decode("utf-8")
+        reader = csv.DictReader(StringIO(text))
+        rows = []
+        for row in reader:
+            clean = {column: row.get(column, "") for column in REQUIRED_COLUMNS}
+            for numeric in ["Days Open", "SLA Limit", "Exposure"]:
+                try:
+                    clean[numeric] = int(float(clean[numeric]))
+                except Exception:
+                    clean[numeric] = 0
+            rows.append(clean)
+        return rows if rows else DEFAULT_CASES
+    except Exception:
+        return DEFAULT_CASES
 
 def table_html(rows, columns):
     head = "".join(["<th>{}</th>".format(safe(c)) for c in columns])
@@ -111,15 +109,12 @@ def table_html(rows, columns):
         body += "<tr>" + "".join(["<td>{}</td>".format(safe(row.get(c, ""))) for c in columns]) + "</tr>"
     return '<div class="table-scroll"><table class="queue-table"><thead><tr>{}</tr></thead><tbody>{}</tbody></table></div>'.format(head, body)
 
-
 def bar_html(label, value, max_value):
     width = 0 if max_value == 0 else (value / max_value) * 100
     return '<div class="bar-row"><div class="bar-label">{}</div><div class="track"><div class="fill" style="width:{}%"></div></div><div class="bar-value">{}</div></div>'.format(safe(label), width, value)
 
-
 def metric_card(label, value, note):
-    return f'<div class="metric-card"><div class="metric-label">{safe(label)}</div><div class="metric-number">{safe(value)}</div><div class="metric-note">{safe(note)}</div></div>'
-
+    return '<div class="metric-card"><div class="metric-label">{}</div><div class="metric-number">{}</div><div class="metric-note">{}</div></div>'.format(safe(label), safe(value), safe(note))
 
 def brief_text(rows):
     total = len(rows)
@@ -157,34 +152,22 @@ Recommended Human Review Actions
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap');
-
 :root { --orange: #FF8200; --black: #000000; --white: #FFFFFF; }
-
-[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="collapsedControl"], header, footer {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-}
-
+[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="collapsedControl"], header, footer { display: none !important; visibility: hidden !important; height: 0 !important; }
 html, body, [data-testid="stAppViewContainer"] { background: var(--white) !important; color: var(--black) !important; }
 .block-container { max-width: 1380px !important; padding-top: 0 !important; padding-left: 3rem !important; padding-right: 3rem !important; padding-bottom: 5rem !important; }
-
 p, div, span, label, input, textarea, button, select { font-family: Inter, Arial, sans-serif !important; color: var(--black) !important; }
 h1, h2, h3 { font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; letter-spacing: -0.04em !important; color: var(--black) !important; }
-
 [data-testid="stSidebar"] { background: var(--white) !important; border-right: 4px solid var(--orange) !important; }
 [data-testid="stSidebar"] label { font-size: 0.67rem !important; letter-spacing: 0.18em !important; text-transform: uppercase !important; }
 div[data-baseweb="select"] > div, div[data-baseweb="input"] > div, textarea { background: var(--white) !important; border: 1px solid var(--black) !important; border-radius: 0 !important; box-shadow: inset 6px 0 0 var(--orange) !important; }
 span[data-baseweb="tag"], [data-baseweb="tag"] { background: var(--white) !important; color: var(--black) !important; border: 1px solid var(--orange) !important; border-radius: 0 !important; }
-
 button, .stDownloadButton button { border-radius: 0 !important; border: 1px solid var(--black) !important; background: var(--white) !important; color: var(--black) !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; box-shadow: inset 6px 0 0 var(--orange) !important; }
-
 .brand-shell { border-left: 1px solid var(--black); border-right: 1px solid var(--black); border-top: 8px solid var(--orange); padding: 2rem 2.2rem 2.7rem 2.2rem; background: var(--white); }
 .signature-name { font-family: "Great Vibes", cursive !important; font-weight: 400 !important; font-size: clamp(4.6rem, 8vw, 8.4rem); line-height: 0.82; color: var(--black) !important; }
 .signature-subline { margin-top: 0.9rem; font-size: 0.78rem; letter-spacing: 0.44em; text-transform: uppercase; font-weight: 500; }
 .signature-intelligence { margin-top: 0.42rem; font-size: 0.82rem; letter-spacing: 0.54em; text-transform: uppercase; color: var(--orange) !important; font-weight: 500; }
 .signature-rule { height: 6px; background: var(--orange); margin: 1.5rem 0 2.4rem 0; }
-
 .kicker { font-size: 0.68rem; letter-spacing: 0.34em; text-transform: uppercase; font-weight: 500; margin-bottom: 1rem; }
 .hero-grid { display: grid; grid-template-columns: 0.9fr 0.75fr; gap: 2rem; align-items: stretch; }
 .hero-title { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(4rem, 7vw, 7.6rem); line-height: 0.92; letter-spacing: -0.055em; font-weight: 400 !important; margin: 0; }
@@ -195,53 +178,38 @@ button, .stDownloadButton button { border-radius: 0 !important; border: 1px soli
 .identity-domains { font-size: 0.86rem; letter-spacing: 0.24em; text-transform: uppercase; line-height: 2.1; font-weight: 500; }
 .badge-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 2rem 0 2.5rem 0; }
 .badge { border: 1px solid var(--black); border-left: 8px solid var(--orange); padding: 0.78rem 1rem; letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.72rem; font-weight: 600; }
-
 .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; margin: 2.4rem 0; }
 .metric-card { border: 1px solid var(--black); border-left: 8px solid var(--orange); padding: 1.8rem 1.5rem; min-height: 172px; background: var(--white); }
 .metric-label { letter-spacing: 0.24em; text-transform: uppercase; font-size: 0.72rem; font-weight: 600; }
 .metric-number { font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; letter-spacing: -0.055em; font-size: clamp(3.1rem, 5vw, 5.2rem); line-height: 1.05; color: var(--orange) !important; margin-top: 1.1rem; }
 .metric-note { font-size: 0.9rem; line-height: 1.55; margin-top: 0.9rem; }
-
 .stTabs [data-baseweb="tab-list"] { gap: 1rem; border-bottom: 2px solid var(--black); overflow-x: auto; }
 .stTabs [data-baseweb="tab"] { border: 1px solid var(--black); border-radius: 0 !important; padding: 1rem 1.2rem; background: var(--white); }
 .stTabs [aria-selected="true"] { background: var(--orange) !important; }
 .stTabs [data-baseweb="tab"] p { font-size: 0.88rem; letter-spacing: 0.08em; }
-
 .section-title { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(2.8rem, 5vw, 5rem); letter-spacing: -0.055em; line-height: 0.95; margin: 3rem 0 1.4rem 0; }
 .section-copy { font-size: 1.03rem; line-height: 1.85; max-width: 900px; }
 .panel { border: 1px solid var(--black); border-left: 8px solid var(--orange); padding: 2rem; margin: 1.4rem 0; }
 .panel-title { letter-spacing: 0.24em; text-transform: uppercase; font-size: 0.72rem; font-weight: 600; margin-bottom: 1rem; }
 .callout { border: 1px solid var(--black); border-top: 8px solid var(--orange); padding: 2rem; margin: 2rem 0; }
-
 .table-scroll { overflow-x: auto; border: 1px solid var(--black); margin-top: 1.2rem; }
 .queue-table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
 .queue-table th { border-bottom: 1px solid var(--black); padding: 0.85rem; text-align: left; letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.68rem; white-space: nowrap; }
 .queue-table td { border-bottom: 1px solid var(--black); padding: 0.85rem; white-space: nowrap; }
 .queue-table tr:last-child td { border-bottom: 0; }
-
 .bar-row { display: grid; grid-template-columns: 150px 1fr 50px; align-items: center; gap: 1rem; margin: 1rem 0; }
 .track { height: 22px; border: 1px solid var(--black); background: var(--white); }
 .fill { height: 100%; background: var(--orange); }
 .bar-label { font-weight: 500; }
 .bar-value { font-family: "Playfair Display", Georgia, serif !important; font-size: 1.75rem; color: var(--orange) !important; }
-
 .method-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-top: 1.5rem; }
 .method-card { border: 1px solid var(--black); border-top: 7px solid var(--orange); padding: 1.2rem; min-height: 210px; }
 .method-card h4 { font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; font-size: 1.55rem; line-height: 1.05; margin: 0 0 1rem 0; }
 .method-card p { font-size: 0.82rem; line-height: 1.65; }
-
 .footer-lockup { margin-top: 4rem; border-top: 6px solid var(--orange); border-bottom: 6px solid var(--orange); padding: 2.2rem 0; text-align: center; }
 .footer-signature { font-family: "Great Vibes", cursive !important; font-size: clamp(4rem, 8vw, 7rem); line-height: 0.9; }
 .footer-links a { display: inline-block; border: 1px solid var(--black); padding: 0.8rem 1.1rem; margin: 1rem 0.4rem 0 0.4rem; text-decoration: none !important; color: var(--black) !important; letter-spacing: 0.15em; text-transform: uppercase; font-size: 0.75rem; box-shadow: inset 6px 0 0 var(--orange); }
-
-@media (max-width: 900px) {
-    .block-container { padding-left: 1.35rem !important; padding-right: 1.35rem !important; }
-    .brand-shell { padding: 1.35rem; }
-    .hero-grid, .metric-grid, .method-grid { grid-template-columns: 1fr; }
-    .hero-title { font-size: 4.2rem; }
-    .signature-name { font-size: 4.7rem; }
-    .bar-row { grid-template-columns: 105px 1fr 35px; gap: 0.7rem; }
-}
+@media (max-width: 900px) { .block-container { padding-left: 1.35rem !important; padding-right: 1.35rem !important; } .brand-shell { padding: 1.35rem; } .hero-grid, .metric-grid, .method-grid { grid-template-columns: 1fr; } .hero-title { font-size: 4.2rem; } .signature-name { font-size: 4.7rem; } .bar-row { grid-template-columns: 105px 1fr 35px; gap: 0.7rem; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -259,8 +227,6 @@ workflow_filter = st.sidebar.multiselect("Filter by workflow area", workflow_opt
 service_filter = st.sidebar.multiselect("Filter by service line", service_options, default=service_options)
 
 active_cases = [c for c in all_cases if c["Risk"] in risk_filter and c["Payer Group"] in payer_filter and c["Workflow Domain"] in workflow_filter and c["Service Line"] in service_filter]
-if not active_cases:
-    active_cases = []
 
 total = len(active_cases)
 high_count = sum(1 for c in active_cases if c["Risk"] == "High")
@@ -282,9 +248,7 @@ st.markdown("""
             <div class="hero-title">Enterprise<br>Revenue<br><span>Operations</span><br>Platform</div>
             <div class="hero-copy">A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, routing intelligence, documentation readiness, denial prevention, payer friction analysis, and responsible operational intelligence.</div>
             <div class="hero-copy">This build functions as an operational review workbench: filter synthetic cases, isolate ownership gaps, simulate stabilization impact, generate escalation language, and build a leadership brief from the active command view.</div>
-            <div class="badge-row">
-                <div class="badge">No PHI</div><div class="badge">Synthetic Data</div><div class="badge">Human Review Required</div><div class="badge">Built by Kori Pickle</div>
-            </div>
+            <div class="badge-row"><div class="badge">No PHI</div><div class="badge">Synthetic Data</div><div class="badge">Human Review Required</div><div class="badge">Built by Kori Pickle</div></div>
         </div>
         <div class="identity-panel">
             <div class="panel-title">Operational Identity</div>
@@ -354,7 +318,7 @@ with tabs[4]:
         selected_rule = st.selectbox("Select synthetic case", [c["Case ID"] for c in active_cases], key="payer_rule_case")
         case = next(c for c in active_cases if c["Case ID"] == selected_rule)
         st.markdown(f'<div class="panel"><div class="panel-title">Synthetic Payer Rule</div><div class="section-copy">{safe(case["Payer Rule"])}</div></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="panel"><div class="panel-title">Human Review Translation</div><div class="section-copy">Before submission, the assigned owner should confirm whether the required documentation supports this payer rule. This lab does not approve, deny, code, bill, or make clinical decisions.</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="panel"><div class="panel-title">Human Review Translation</div><div class="section-copy">Before submission, the assigned owner should confirm whether the required documentation supports this payer rule. This lab does not approve, deny, code, bill, or make clinical decisions.</div></div>', unsafe_allow_html=True)
 
 with tabs[5]:
     st.markdown('<div class="section-title">SLA Breach Countdown</div>', unsafe_allow_html=True)
@@ -416,11 +380,11 @@ with tabs[11]:
     st.text_area("Executive brief preview", brief, height=420)
     st.download_button("Download executive brief", data=brief, file_name="kori_pickle_enterprise_revenue_operations_brief.txt", mime="text/plain")
 
-st.markdown("""
+st.markdown(f"""
 <div class="footer-lockup">
     <div class="kicker">Created by Kori Pickle</div>
     <div class="footer-signature">Kori Pickle</div>
     <div class="section-copy" style="margin-left:auto; margin-right:auto;">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</div>
-    <div class="footer-links"><a href="https://www.linkedin.com/" target="_blank">LinkedIn</a><a href="https://github.com/koripickle1101-TN" target="_blank">GitHub</a></div>
+    <div class="footer-links"><a href="{LINKEDIN_URL}" target="_blank">LinkedIn</a><a href="{GITHUB_URL}" target="_blank">GitHub</a></div>
 </div>
 """, unsafe_allow_html=True)

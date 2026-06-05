@@ -10,10 +10,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-ORANGE = "rgb(255, 130, 0)"
-BLACK = "rgb(0, 0, 0)"
-WHITE = "rgb(255, 255, 255)"
-
 cases = [
     {"Case ID":"REV-0001","Payer Group":"Commercial","Workflow Domain":"Patient Access","Service Line":"Orthopedics","Risk":"High","Owner":"Patient Access Lead","Days Open":7,"SLA Limit":5,"Exposure":18450,"Status":"Needs Documentation","Required Docs":["order","insurance card","clinical note","medical necessity note"],"Present Docs":["order","insurance card"],"First Control Loss":"Documentation Control","Next Action":"Validate documentation packet and assign same day authorization follow up."},
     {"Case ID":"REV-0002","Payer Group":"Medicare Advantage","Workflow Domain":"Authorization Control","Service Line":"Neurology","Risk":"High","Owner":"Prior Authorization Lead","Days Open":9,"SLA Limit":5,"Exposure":32700,"Status":"Escalate","Required Docs":["order","neuro exam","failed conservative therapy","imaging rationale"],"Present Docs":["order","neuro exam"],"First Control Loss":"Authorization Readiness Control","Next Action":"Escalate payer follow up and request missing medical necessity support."},
@@ -73,7 +69,7 @@ def table_html(rows, columns):
 
 def bar_html(label, value, max_value):
     width = 0 if max_value == 0 else (value / max_value) * 100
-    return '<div class="bar-row"><div>{}</div><div class="track"><div class="fill" style="width:{}%"></div></div><div>{}</div></div>'.format(safe(label), width, value)
+    return '<div class="bar-row"><div class="bar-label">{}</div><div class="track"><div class="fill" style="width:{}%"></div></div><div class="bar-value">{}</div></div>'.format(safe(label), width, value)
 
 def brief_text(rows):
     total = len(rows)
@@ -110,7 +106,7 @@ Recommended Human Review Actions
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Inter:wght@300;400;500;600&family=Great+Vibes&display=swap');
 
 :root { --orange: rgb(255, 130, 0); --black: rgb(0, 0, 0); --white: rgb(255, 255, 255); }
 
@@ -121,66 +117,71 @@ st.markdown("""
 }
 
 html, body, [data-testid="stAppViewContainer"] { background: var(--white) !important; color: var(--black) !important; }
-.block-container { max-width: 1380px !important; padding-top: 1rem !important; padding-left: 3rem !important; padding-right: 3rem !important; padding-bottom: 5rem !important; }
+.block-container { max-width: 1380px !important; padding-top: 0.75rem !important; padding-left: 3rem !important; padding-right: 3rem !important; padding-bottom: 5rem !important; }
 
 p, div, span, label, input, textarea, button, select { font-family: Inter, Arial, sans-serif !important; color: var(--black) !important; }
-h1, h2, h3 { font-family: "Cormorant Garamond", Georgia, serif !important; font-weight: 300 !important; letter-spacing: -0.055em !important; color: var(--black) !important; }
+h1, h2, h3 { font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; letter-spacing: -0.035em !important; color: var(--black) !important; }
 
-[data-testid="stSidebar"] { background: var(--white) !important; border-right: 1px solid var(--black) !important; }
+[data-testid="stSidebar"] { background: var(--white) !important; border-right: 2px solid var(--orange) !important; }
 [data-testid="stSidebar"] label { font-size: 0.66rem !important; letter-spacing: 0.18em !important; text-transform: uppercase !important; }
-div[data-baseweb="select"] > div, div[data-baseweb="input"] > div, textarea { background: var(--white) !important; border: 1px solid var(--black) !important; border-radius: 0 !important; box-shadow: none !important; }
-span[data-baseweb="tag"], [data-baseweb="tag"] { background: var(--white) !important; color: var(--black) !important; border: 1px solid var(--orange) !important; border-radius: 0 !important; }
+div[data-baseweb="select"] > div, div[data-baseweb="input"] > div, textarea { background: var(--white) !important; border: 1px solid var(--black) !important; border-radius: 0 !important; box-shadow: inset 5px 0 0 var(--orange) !important; }
+span[data-baseweb="tag"], [data-baseweb="tag"] { background: var(--white) !important; color: var(--black) !important; border: 1px solid var(--orange) !important; border-radius: 999px !important; }
 
-.brand-shell { border-left: 1px solid var(--black); border-right: 1px solid var(--black); padding: 2rem 2.2rem 2.7rem 2.2rem; background: var(--white); }
-.signature-name { font-family: "Cormorant Garamond", Georgia, serif !important; font-style: italic; font-weight: 300 !important; font-size: clamp(3.8rem, 7vw, 7rem); line-height: 0.82; letter-spacing: -0.07em; }
-.signature-subline { margin-top: 0.8rem; font-size: 0.78rem; letter-spacing: 0.46em; text-transform: uppercase; font-weight: 500; }
-.signature-intel { margin-top: 0.35rem; font-size: 0.78rem; letter-spacing: 0.52em; text-transform: uppercase; color: var(--orange) !important; font-weight: 500; }
-.signature-rule { height: 5px; background: var(--orange); margin: 1.45rem 0 2.2rem 0; }
+.brand-shell { border-left: 1px solid var(--black); border-right: 1px solid var(--black); border-top: 7px solid var(--orange); padding: 2rem 2.2rem 2.7rem 2.2rem; background: var(--white); }
+.signature-header { margin-bottom: 1.7rem; }
+.signature-name { font-family: "Great Vibes", cursive !important; font-weight: 400 !important; font-size: clamp(4.3rem, 8vw, 8rem); line-height: 0.82; letter-spacing: 0; color: var(--black) !important; }
+.signature-subline { margin-top: 0.9rem; font-size: 0.8rem; letter-spacing: 0.47em; text-transform: uppercase; font-weight: 500; }
+.signature-intelligence { margin-top: 0.42rem; font-size: 0.82rem; letter-spacing: 0.56em; text-transform: uppercase; color: var(--orange) !important; font-weight: 500; }
+.signature-rule { height: 5px; background: var(--orange); margin: 1.5rem 0 2.1rem 0; }
 
 .kicker { font-size: 0.68rem; letter-spacing: 0.34em; text-transform: uppercase; font-weight: 500; margin-bottom: 1rem; }
-.hero-grid { display: grid; grid-template-columns: 0.95fr 0.75fr; gap: 2rem; align-items: stretch; }
-.hero-title { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: clamp(4.2rem, 7vw, 7.8rem); line-height: 0.86; letter-spacing: -0.07em; font-weight: 300 !important; margin: 0; }
-.hero-title span { color: var(--orange) !important; font-family: "Cormorant Garamond", Georgia, serif !important; font-weight: 300 !important; }
-.hero-copy { margin-top: 1.6rem; max-width: 840px; font-size: 1.03rem; line-height: 1.78; font-weight: 400; }
-.identity-panel { border: 1px solid var(--black); padding: 2rem; min-height: 430px; display: flex; flex-direction: column; justify-content: space-between; }
-.identity-statement { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: clamp(2.5rem, 4.4vw, 4.4rem); line-height: 0.93; letter-spacing: -0.055em; font-weight: 300; }
-.orange-line { height: 3px; width: 56%; background: var(--orange); margin: 1.4rem 0; }
-.badge { display: inline-block; border: 1px solid var(--black); border-left: 7px solid var(--orange); padding: 0.62rem 0.9rem; margin: 0.28rem; font-size: 0.67rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; background: var(--white); }
+.hero-grid { display: grid; grid-template-columns: 0.9fr 0.75fr; gap: 2rem; align-items: stretch; }
+.hero-title { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(4rem, 7vw, 7.4rem); line-height: 0.92; letter-spacing: -0.05em; font-weight: 400 !important; margin: 0; }
+.hero-title span { color: var(--orange) !important; font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; }
+.hero-copy { margin-top: 1.6rem; max-width: 850px; font-size: 1.04rem; line-height: 1.82; font-weight: 400; }
+.identity-panel { border: 1px solid var(--black); border-top: 7px solid var(--orange); padding: 2rem; min-height: 420px; display: flex; flex-direction: column; justify-content: space-between; }
+.identity-statement { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(2.35rem, 4.1vw, 4rem); line-height: 1.02; letter-spacing: -0.035em; font-weight: 400; }
+.orange-line { height: 4px; width: 60%; background: var(--orange); margin: 1.4rem 0; }
+.badge { display: inline-block; border: 1px solid var(--black); border-left: 8px solid var(--orange); padding: 0.64rem 0.9rem; margin: 0.28rem; font-size: 0.67rem; font-weight: 500; letter-spacing: 0.13em; text-transform: uppercase; background: var(--white); }
 
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem 0; }
-.metric-card { border: 1px solid var(--black); border-left: 6px solid var(--orange); padding: 1.55rem; min-height: 160px; background: var(--white); }
-.metric-label { font-size: 0.64rem; letter-spacing: 0.24em; text-transform: uppercase; font-weight: 500; margin-bottom: 0.9rem; }
-.metric-value { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: clamp(3.4rem, 5.2vw, 5.3rem); line-height: 0.9; letter-spacing: -0.065em; font-weight: 300 !important; color: var(--black); }
-.metric-note { font-size: 0.84rem; line-height: 1.5; margin-top: 1rem; }
+.metric-card { border: 1px solid var(--black); border-left: 8px solid var(--orange); border-top: 4px solid var(--orange); padding: 1.55rem; min-height: 162px; background: var(--white); position: relative; }
+.metric-card:after { content: ""; position: absolute; right: 1rem; bottom: 1rem; width: 38px; height: 2px; background: var(--orange); }
+.metric-label { font-size: 0.64rem; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 500; margin-bottom: 1rem; }
+.metric-value { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(3rem, 4.7vw, 4.8rem); line-height: 1.02; letter-spacing: -0.035em; font-weight: 400 !important; color: var(--black) !important; font-variant-numeric: lining-nums proportional-nums !important; }
+.metric-note { font-size: 0.84rem; line-height: 1.5; margin-top: 0.95rem; }
 
-.stTabs [data-baseweb="tab-list"] { gap: 0.6rem; border-bottom: 1px solid var(--black); padding-bottom: 0.6rem; overflow-x: auto; }
-.stTabs [data-baseweb="tab"] { background: var(--white) !important; border: 1px solid var(--black) !important; border-radius: 0 !important; padding: 0.68rem 0.95rem !important; font-weight: 400 !important; }
+.stTabs [data-baseweb="tab-list"] { gap: 0.6rem; border-bottom: 2px solid var(--orange); padding-bottom: 0.6rem; overflow-x: auto; }
+.stTabs [data-baseweb="tab"] { background: var(--white) !important; border: 1px solid var(--black) !important; border-radius: 0 !important; padding: 0.7rem 1rem !important; font-weight: 400 !important; }
 .stTabs [aria-selected="true"] { background: var(--orange) !important; border-color: var(--orange) !important; }
 
-.section-title { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: clamp(3rem, 5.4vw, 5.7rem); line-height: 0.94; letter-spacing: -0.06em; font-weight: 300 !important; margin: 1.3rem 0 1rem 0; }
-.section-panel { border: 1px solid var(--black); padding: 2rem; margin: 1.2rem 0; }
-.editorial-note { border: 1px solid var(--black); border-left: 6px solid var(--orange); padding: 1.6rem; margin: 1.2rem 0; }
-.editorial-note h3 { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: clamp(2.4rem, 4.4vw, 4rem); line-height: 0.94; margin: 0 0 1rem 0; font-weight: 300 !important; }
+.section-title { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(2.8rem, 5vw, 5.1rem); line-height: 1; letter-spacing: -0.04em; font-weight: 400 !important; margin: 1.3rem 0 1rem 0; }
+.section-panel { border: 1px solid var(--black); border-top: 5px solid var(--orange); padding: 2rem; margin: 1.2rem 0; }
+.editorial-note { border: 1px solid var(--black); border-left: 8px solid var(--orange); padding: 1.6rem; margin: 1.2rem 0; }
+.editorial-note h3 { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(2.2rem, 4vw, 3.6rem); line-height: 1; margin: 0 0 1rem 0; font-weight: 400 !important; }
 
-.table-scroll { overflow-x: auto; border: 1px solid var(--black); margin: 1rem 0; }
+.table-scroll { overflow-x: auto; border: 1px solid var(--black); border-top: 5px solid var(--orange); margin: 1rem 0; }
 .queue-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
-.queue-table th { background: var(--white); border: 1px solid var(--black); padding: 0.72rem; text-align: left; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; }
+.queue-table th { background: var(--orange); color: var(--black) !important; border: 1px solid var(--black); padding: 0.72rem; text-align: left; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; }
 .queue-table td { border: 1px solid var(--black); padding: 0.72rem; vertical-align: top; }
-.score-wrap { border: 1px solid var(--black); border-left: 6px solid var(--orange); padding: 2rem; margin: 1rem 0; }
-.score-number { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: clamp(5rem, 9vw, 8rem); font-weight: 300 !important; line-height: 0.8; letter-spacing: -0.07em; }
-.track { height: 12px; border: 1px solid var(--black); background: var(--white); }
+.score-wrap { border: 1px solid var(--black); border-left: 8px solid var(--orange); border-top: 5px solid var(--orange); padding: 2rem; margin: 1rem 0; }
+.score-number { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(4.2rem, 7.5vw, 7rem); font-weight: 400 !important; line-height: 1; letter-spacing: -0.035em; font-variant-numeric: lining-nums proportional-nums !important; }
+.track { height: 13px; border: 1px solid var(--black); background: var(--white); }
 .fill { height: 100%; background: var(--orange); }
 .bar-row { display: grid; grid-template-columns: 130px 1fr 44px; gap: 1rem; align-items: center; margin: 1rem 0; }
-.footer-brand { border-top: 4px solid var(--orange); border-bottom: 4px solid var(--orange); text-align: center; padding: 2.4rem 1rem; margin-top: 3rem; }
-.footer-signature { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: 4.4rem; font-style: italic; font-weight: 300 !important; letter-spacing: -0.05em; line-height: 1; margin: 0.7rem 0 0.5rem 0; }
-.link-button { display: inline-block; border: 1px solid var(--black); padding: 0.7rem 1.2rem; margin: 0.4rem; text-decoration: none !important; color: var(--black) !important; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
-button, .stDownloadButton button { background: var(--white) !important; border: 1px solid var(--black) !important; border-radius: 0 !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
+.bar-value { font-family: "Playfair Display", Georgia, serif !important; font-size: 1.45rem; font-weight: 400 !important; color: var(--orange) !important; }
+.footer-brand { border-top: 5px solid var(--orange); border-bottom: 5px solid var(--orange); text-align: center; padding: 2.4rem 1rem; margin-top: 3rem; }
+.footer-signature { font-family: "Great Vibes", cursive !important; font-size: 5.3rem; font-weight: 400 !important; letter-spacing: 0; line-height: 1; margin: 0.7rem 0 0.5rem 0; }
+.link-button { display: inline-block; border: 1px solid var(--black); border-left: 6px solid var(--orange); padding: 0.72rem 1.2rem; margin: 0.4rem; text-decoration: none !important; color: var(--black) !important; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+button, .stDownloadButton button { background: var(--white) !important; border: 1px solid var(--black) !important; border-left: 6px solid var(--orange) !important; border-radius: 0 !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
 
 @media (max-width: 900px) {
-    .block-container { padding-left: 1.2rem !important; padding-right: 1.2rem !important; }
+    .block-container { padding-left: 1.05rem !important; padding-right: 1.05rem !important; }
     .brand-shell { padding: 1.35rem; }
     .hero-grid, .metric-grid { grid-template-columns: 1fr; }
-    .hero-title { font-size: clamp(3.8rem, 15vw, 6rem); }
+    .hero-title { font-size: clamp(3.25rem, 13vw, 5.25rem); }
+    .signature-name { font-size: clamp(4rem, 16vw, 6rem); }
+    .metric-value { font-size: clamp(3rem, 14vw, 4.5rem); }
     .bar-row { grid-template-columns: 95px 1fr 30px; }
 }
 </style>
@@ -214,10 +215,12 @@ owners = len(set(c["Owner"] for c in filtered))
 
 st.markdown("""
 <div class="brand-shell">
-    <div class="signature-name">Kori Pickle</div>
-    <div class="signature-subline">Healthcare Operations</div>
-    <div class="signature-intel">Intelligence</div>
-    <div class="signature-rule"></div>
+    <div class="signature-header">
+        <div class="signature-name">Kori Pickle</div>
+        <div class="signature-subline">Healthcare Operations</div>
+        <div class="signature-intelligence">Intelligence</div>
+        <div class="signature-rule"></div>
+    </div>
     <div class="hero-grid">
         <div>
             <div class="kicker">Kori Pickle • Healthcare Operations Intelligence</div>
@@ -348,7 +351,7 @@ st.markdown("""
 <div class="footer-brand">
     <div class="footer-signature">Kori Pickle</div>
     <div class="signature-subline">Healthcare Operations</div>
-    <div class="signature-intel">Intelligence</div>
+    <div class="signature-intelligence">Intelligence</div>
     <div class="kicker" style="margin-top:1.4rem;">Created by Kori Pickle</div>
     <p>Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p>
     <a class="link-button" href="https://www.linkedin.com/" target="_blank">LinkedIn</a>

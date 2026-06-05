@@ -8,9 +8,12 @@ import streamlit as st
 st.set_page_config(
     page_title="Kori Pickle Healthcare Operations Intelligence",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
+TENNESSEE_ORANGE = "#FF8200"
+BLACK = "#000000"
+WHITE = "#FFFFFF"
 LINKEDIN_URL = "https://www.linkedin.com/in/kori-p-865jct"
 GITHUB_URL = "https://github.com/koripickle1101-TN"
 
@@ -32,23 +35,11 @@ DEFAULT_DATA = [
 ]
 
 REQUIRED_COLUMNS = {
-    "Case ID": "id",
-    "Payer Group": "payer",
-    "Workflow Domain": "domain",
-    "Service Line": "line",
-    "Risk": "risk",
-    "Owner": "owner",
-    "Days Open": "days",
-    "SLA Limit": "sla",
-    "Exposure": "exposure",
-    "Status": "status",
-    "Required Docs": "required",
-    "Present Docs": "present",
-    "First Control Loss": "loss",
-    "Payer Rule": "rule",
-    "Next Action": "action"
+    "Case ID": "id", "Payer Group": "payer", "Workflow Domain": "domain", "Service Line": "line",
+    "Risk": "risk", "Owner": "owner", "Days Open": "days", "SLA Limit": "sla", "Exposure": "exposure",
+    "Status": "status", "Required Docs": "required", "Present Docs": "present", "First Control Loss": "loss",
+    "Payer Rule": "rule", "Next Action": "action"
 }
-
 CONTROL_DOMAINS = ["Access Control", "Documentation Control", "Authorization Control", "Routing Control", "Follow-Up Control"]
 
 def esc(value):
@@ -72,29 +63,20 @@ def readiness_score(case):
     return round(max(0, min(100, score)), 1)
 
 def wlcm_scores(case):
-    misses = len(missing_docs(case))
-    overdue = max(0, int(case.get("days", 0)) - int(case.get("sla", 5)))
-    base = {
-        "Access Control": 86,
-        "Documentation Control": 86,
-        "Authorization Control": 86,
-        "Routing Control": 86,
-        "Follow-Up Control": 86
-    }
+    scores = {domain: 86 for domain in CONTROL_DOMAINS}
     loss = case.get("loss", "None")
-    if loss in base:
-        base[loss] -= 32
+    if loss in scores:
+        scores[loss] -= 32
     if case.get("domain") in ["Patient Access", "Eligibility Verification", "Financial Clearance"]:
-        base["Access Control"] -= 12
-    if misses:
-        base["Documentation Control"] -= misses * 9
+        scores["Access Control"] -= 12
+    scores["Documentation Control"] -= len(missing_docs(case)) * 9
     if case.get("domain") == "Authorization Control":
-        base["Authorization Control"] -= 16
+        scores["Authorization Control"] -= 16
     if case.get("domain") == "Routing Intelligence":
-        base["Routing Control"] -= 18
-    if overdue:
-        base["Follow-Up Control"] -= overdue * 10
-    return {key: max(0, min(100, round(value, 1))) for key, value in base.items()}
+        scores["Routing Control"] -= 18
+    overdue = max(0, int(case.get("days", 0)) - int(case.get("sla", 5)))
+    scores["Follow-Up Control"] -= overdue * 10
+    return {key: max(0, min(100, round(value, 1))) for key, value in scores.items()}
 
 def first_failed_domain(case):
     scores = wlcm_scores(case)
@@ -112,16 +94,17 @@ def stability_status(case):
     return "Stable"
 
 def auth_readiness(case):
+    present = split_items(case.get("present", ""))
     factors = {
-        "Eligibility verified": any(x in split_items(case.get("present", "")) for x in ["Eligibility Response", "Benefit Check"]),
-        "Benefit checked": "Benefit Check" in split_items(case.get("present", "")),
-        "CPT or service requirement reviewed": any(x in split_items(case.get("present", "")) for x in ["Procedure Code", "Site of Service"]),
-        "Clinical note present": any(x in split_items(case.get("present", "")) for x in ["Clinical Note", "Cardiology Note", "Neuro Exam", "Surgical Note", "Assessment"]),
-        "Medical necessity support present": "Medical Necessity Note" in split_items(case.get("present", "")),
-        "Prior therapy history present when required": any(x in split_items(case.get("present", "")) for x in ["Prior Therapy History", "Failed Conservative Therapy", "Failed Therapy Evidence"]) or "Therapy" not in case.get("required", ""),
-        "Payer route confirmed": "Payer Route" in split_items(case.get("present", "")) or case.get("domain") != "Routing Intelligence",
+        "Eligibility verified": any(x in present for x in ["Eligibility Response", "Benefit Check"]),
+        "Benefit checked": "Benefit Check" in present,
+        "Service requirement reviewed": any(x in present for x in ["Procedure Code", "Site of Service"]),
+        "Clinical note present": any(x in present for x in ["Clinical Note", "Cardiology Note", "Neuro Exam", "Surgical Note", "Assessment"]),
+        "Medical necessity support present": "Medical Necessity Note" in present,
+        "Prior therapy history present when required": any(x in present for x in ["Prior Therapy History", "Failed Conservative Therapy", "Failed Therapy Evidence"]) or "Therapy" not in case.get("required", ""),
+        "Payer route confirmed": "Payer Route" in present or case.get("domain") != "Routing Intelligence",
         "Submission owner assigned": bool(case.get("owner", "")),
-        "Follow-up date documented": int(case.get("days", 0)) <= int(case.get("sla", 5))
+        "Follow-up window documented": int(case.get("days", 0)) <= int(case.get("sla", 5))
     }
     met = sum(1 for value in factors.values() if value)
     score = round(met / len(factors) * 100, 1)
@@ -149,7 +132,7 @@ def sla_status(case):
 
 def parse_csv(uploaded):
     if uploaded is None:
-        return DEFAULT_DATA, ""
+        return DEFAULT_DATA, "Default synthetic data active."
     try:
         raw = uploaded.getvalue().decode("utf-8")
         reader = csv.DictReader(StringIO(raw))
@@ -158,18 +141,18 @@ def parse_csv(uploaded):
             item = {}
             for external, internal in REQUIRED_COLUMNS.items():
                 item[internal] = row.get(external, row.get(internal, ""))
-            for number_key in ["days", "sla", "exposure"]:
+            for key in ["days", "sla", "exposure"]:
                 try:
-                    item[number_key] = int(float(item[number_key]))
+                    item[key] = int(float(item[key]))
                 except Exception:
-                    item[number_key] = 0
+                    item[key] = 0
             if item.get("id"):
                 rows.append(item)
         if rows:
             return rows, "Synthetic CSV loaded. Validation passed."
-        return DEFAULT_DATA, "CSV did not include valid case rows. Default synthetic data is active."
+        return DEFAULT_DATA, "CSV did not include valid synthetic case rows. Default synthetic data active."
     except Exception:
-        return DEFAULT_DATA, "CSV could not be read. Default synthetic data is active."
+        return DEFAULT_DATA, "CSV could not be read. Default synthetic data active."
 
 def summary(rows):
     total = len(rows)
@@ -182,486 +165,346 @@ def summary(rows):
 
 def most_common(rows, key):
     values = [row.get(key, "") for row in rows if row.get(key, "")]
-    if not values:
-        return "None"
-    return Counter(values).most_common(1)[0][0]
+    return Counter(values).most_common(1)[0][0] if values else "None"
 
 def common_missing(rows):
     docs = []
     for row in rows:
         docs.extend(missing_docs(row))
-    if not docs:
-        return "None detected"
-    return Counter(docs).most_common(1)[0][0]
+    return Counter(docs).most_common(1)[0][0] if docs else "None detected"
 
 def executive_brief(rows):
     total, high, sla, exposure, owners, avg_ready = summary(rows)
-    return f"""Enterprise Revenue Operations Platform
-Created by Kori Pickle
+    return f"""Kori Pickle Healthcare Operations Intelligence
+Enterprise Revenue Operations Platform
 Generated {date.today().isoformat()}
 
 Synthetic Data Standard
 This platform uses synthetic records only. It does not process PHI, make payer decisions, make billing determinations, make coding decisions, or provide clinical recommendations.
 
-Active Command View
+Current Command View
 Total synthetic records reviewed: {total}
-High risk count: {high}
-SLA pressure count: {sla}
+High risk records: {high}
+SLA pressure signals: {sla}
 Average readiness score: {avg_ready}
 Simulated exposure: {money(exposure)}
-Distinct owners: {owners}
-Top workflow failure domain: {most_common(rows, "loss")}
+Distinct operational owners: {owners}
+Top workflow failure domain: {most_common(rows, 'loss')}
 Most common missing documentation item: {common_missing(rows)}
-Highest pressure payer group: {most_common([r for r in rows if r.get("risk") == "High"], "payer")}
+Highest pressure payer group: {most_common(rows, 'payer')}
 
-Recommended Leadership Action
-Prioritize human review for records with missing documentation, breached SLA windows, payer routing uncertainty, and authorization readiness gaps. Use the Workflow Loss Control Method to identify where control was lost before the issue becomes downstream denial activity, rework burden, patient access delay, or revenue leakage.
+Leadership Action
+Prioritize cases where documentation readiness, authorization control, routing control, and follow-up control are unstable. Assign a human owner, confirm missing items, document the next action, and escalate records that are at or past the SLA threshold.
+
+Signature Method
+Workflow Loss Control Method asks: Where did the workflow first lose control?
 """
 
-def metric_html(label, value, note):
+def render_html(markup):
+    st.markdown(markup, unsafe_allow_html=True)
+
+def chip(text):
+    return f'<span class="chip">{esc(text)}</span>'
+
+def metric_card(label, value, note):
     return f"""
-        <div class="metric-card">
-            <div class="eyebrow">{esc(label)}</div>
-            <div class="metric-number">{esc(value)}</div>
-            <div class="metric-note">{esc(note)}</div>
-        </div>
+    <div class="metric-card">
+        <div class="eyebrow">{esc(label)}</div>
+        <div class="metric-number">{esc(value)}</div>
+        <div class="metric-note">{esc(note)}</div>
+    </div>
     """
 
-def case_card_html(case):
-    docs = missing_docs(case)
-    miss = ", ".join(docs) if docs else "None detected"
+def case_card(case):
+    missing = missing_docs(case)
+    miss_text = ", ".join(missing) if missing else "None detected"
     status = stability_status(case)
     return f"""
-        <div class="case-card">
-            <div class="case-title">{esc(case.get("id"))}</div>
-            <div class="case-meta">{esc(case.get("risk"))} • {esc(case.get("payer"))} • {esc(case.get("domain"))} • {esc(case.get("line"))}</div>
-            <div class="case-row"><b>Owner:</b> {esc(case.get("owner"))}</div>
-            <div class="case-row"><b>Missing:</b> {esc(miss)}</div>
-            <div class="case-row"><b>Control Status:</b> {esc(status)}</div>
-            <div class="case-row"><b>Next:</b> {esc(case.get("action"))}</div>
-        </div>
+    <div class="case-card">
+        <div class="case-title">{esc(case['id'])}</div>
+        <div class="case-meta">{esc(case['risk'])} • {esc(case['payer'])} • {esc(case['domain'])} • {esc(case['line'])}</div>
+        <div class="case-row"><strong>Owner:</strong> {esc(case['owner'])}</div>
+        <div class="case-row"><strong>Missing:</strong> {esc(miss_text)}</div>
+        <div class="case-row"><strong>Control Status:</strong> {esc(status)}</div>
+        <div class="case-row"><strong>Next:</strong> {esc(case['action'])}</div>
+    </div>
     """
 
-def bar_html(label, value, max_value):
-    width = 0 if max_value == 0 else round(value / max_value * 100, 1)
+def progress_row(label, value, max_value):
+    pct = 0 if max_value == 0 else round(value / max_value * 100, 1)
     return f"""
-        <div class="bar-row">
-            <div>{esc(label)}</div>
-            <div class="track"><div class="fill" style="width:{width}%"></div></div>
-            <div class="bar-number">{esc(value)}</div>
-        </div>
+    <div class="bar-row">
+        <div class="bar-label">{esc(label)}</div>
+        <div class="track"><div class="fill" style="width:{pct}%"></div></div>
+        <div class="bar-number">{esc(value)}</div>
+    </div>
     """
 
-def render_table(rows):
-    header = ["Case ID", "Payer Group", "Workflow Domain", "Service Line", "Risk", "Owner", "Days Open", "SLA Status", "Readiness"]
-    html_rows = ""
+def record_table(rows):
+    header = """
+    <tr><th>Case ID</th><th>Payer Group</th><th>Workflow Domain</th><th>Service Line</th><th>Risk</th><th>Owner</th><th>SLA</th><th>Readiness</th></tr>
+    """
+    body = ""
     for row in rows:
         _, sla_label, _ = sla_status(row)
-        html_rows += f"""
+        body += f"""
         <tr>
-            <td>{esc(row.get("id"))}</td>
-            <td>{esc(row.get("payer"))}</td>
-            <td>{esc(row.get("domain"))}</td>
-            <td>{esc(row.get("line"))}</td>
-            <td>{esc(row.get("risk"))}</td>
-            <td>{esc(row.get("owner"))}</td>
-            <td>{esc(row.get("days"))}</td>
-            <td>{esc(sla_label)}</td>
-            <td>{esc(readiness_score(row))}</td>
+            <td>{esc(row['id'])}</td><td>{esc(row['payer'])}</td><td>{esc(row['domain'])}</td><td>{esc(row['line'])}</td>
+            <td>{esc(row['risk'])}</td><td>{esc(row['owner'])}</td><td>{esc(sla_label)}</td><td>{readiness_score(row)}</td>
         </tr>
         """
-    heads = "".join(f"<th>{h}</th>" for h in header)
-    st.markdown(f'<div class="table-wrap"><table><thead><tr>{heads}</tr></thead><tbody>{html_rows}</tbody></table></div>', unsafe_allow_html=True)
+    return f'<div class="table-scroll"><table class="ops-table">{header}{body}</table></div>'
 
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap');
-    :root { --orange: #FF8200; --black: #000000; --white: #FFFFFF; }
-    [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], header, footer { display: none !important; visibility: hidden !important; height: 0 !important; }
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] { background: var(--white) !important; color: var(--black) !important; }
-    .block-container { max-width: 1280px !important; padding: 2rem 3rem 5rem !important; }
-    [data-testid="stSidebar"] { background: var(--white) !important; border-right: 6px solid var(--orange) !important; }
-    p, div, span, label, input, textarea, select, button { font-family: Inter, Arial, sans-serif !important; color: var(--black) !important; }
-    h1, h2, h3 { font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; color: var(--black) !important; letter-spacing: -0.04em !important; }
-    .shell { border-left: 2px solid var(--black); border-right: 2px solid var(--black); background: var(--white); padding: 3rem 4rem; }
-    .brand-signature { font-family: "Great Vibes", cursive !important; font-size: clamp(4.8rem, 12vw, 9rem); line-height: 0.72; margin: 0 0 1.5rem; color: var(--black) !important; }
-    .brand-sub { letter-spacing: 0.42em; text-transform: uppercase; font-size: 0.92rem; line-height: 2.4; }
-    .orange-rule { height: 12px; background: var(--orange); margin: 2.5rem 0 4rem; }
-    .eyebrow { letter-spacing: 0.34em; text-transform: uppercase; font-size: 0.76rem; font-weight: 600; line-height: 2; }
-    .hero-title { font-family: "Playfair Display", Georgia, serif !important; font-size: clamp(4.2rem, 12vw, 10rem); line-height: 0.88; letter-spacing: -0.06em; font-weight: 400 !important; margin: 3rem 0 2rem; }
-    .hero-title span { font-family: "Playfair Display", Georgia, serif !important; color: var(--orange) !important; font-weight: 400 !important; }
-    .body-copy { font-size: clamp(1.1rem, 2vw, 1.45rem); line-height: 1.9; font-weight: 300; max-width: 980px; }
-    .badges { display: flex; flex-wrap: wrap; gap: 1rem; margin: 3rem 0; }
-    .badge { border: 1px solid var(--black); border-left: 12px solid var(--orange); padding: 0.95rem 1.25rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600; font-size: 0.78rem; background: var(--white); }
-    .identity-panel, .section-panel { border: 1px solid var(--black); border-top: 10px solid var(--orange); padding: 3rem; margin: 3rem 0; background: var(--white); }
-    .identity-title, .section-title { font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; letter-spacing: -0.05em; line-height: 0.94; }
-    .identity-title { font-size: clamp(2.8rem, 7vw, 5.6rem); margin: 2rem 0; }
-    .section-title { font-size: clamp(3rem, 8vw, 6rem); margin: 1rem 0 1.5rem; }
-    .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.2rem; margin: 3rem 0; }
-    .metric-card { border: 1px solid var(--black); border-left: 12px solid var(--orange); padding: 2rem; min-height: 210px; background: var(--white); }
-    .metric-number { font-family: "Playfair Display", Georgia, serif !important; font-weight: 400 !important; color: var(--orange) !important; font-size: clamp(3rem, 6vw, 5.4rem); line-height: 1; margin: 1.5rem 0 1rem; letter-spacing: -0.06em; }
-    .metric-note { font-size: 1rem; line-height: 1.5; }
-    .case-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 2rem 0; }
-    .case-card { border: 1px solid var(--black); border-left: 10px solid var(--orange); padding: 1.5rem; background: var(--white); }
-    .case-title { font-family: "Playfair Display", Georgia, serif !important; font-size: 2.3rem; letter-spacing: -0.05em; line-height: 1; }
-    .case-meta { letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.75rem; line-height: 1.7; margin: 1rem 0; }
-    .case-row { line-height: 1.6; margin: 0.55rem 0; }
-    .table-wrap { overflow-x: auto; border: 1px solid var(--black); margin: 2rem 0; background: var(--white); }
-    table { border-collapse: collapse; min-width: 1120px; width: 100%; background: var(--white); }
-    th { background: var(--orange); color: var(--black); letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.72rem; }
-    th, td { border: 1px solid var(--black); padding: 1rem; text-align: left; vertical-align: top; }
-    .bar-row { display: grid; grid-template-columns: 140px 1fr 56px; gap: 1rem; align-items: center; margin: 1.25rem 0; font-size: 1.1rem; }
-    .track { height: 24px; border: 1px solid var(--black); background: var(--white); }
-    .fill { height: 100%; background: var(--orange); }
-    .bar-number { font-family: "Playfair Display", Georgia, serif !important; color: var(--orange) !important; font-size: 2.2rem; line-height: 1; }
-    .brief-box { white-space: pre-wrap; border: 1px solid var(--black); border-left: 12px solid var(--orange); padding: 2rem; line-height: 1.7; background: var(--white); }
-    .small-list { line-height: 1.9; font-size: 1.05rem; }
-    .footer-brand { text-align: center; margin-top: 5rem; padding: 4rem 0; border-top: 10px solid var(--orange); border-bottom: 10px solid var(--orange); }
-    .footer-signature { font-family: "Great Vibes", cursive !important; font-size: clamp(4.2rem, 10vw, 8rem); line-height: 0.82; color: var(--black) !important; }
-    .footer-links a { display: inline-block; border: 1px solid var(--black); border-left: 10px solid var(--orange); padding: 1rem 1.8rem; margin: 1rem 0.5rem; text-decoration: none !important; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; color: var(--black) !important; }
-    .stButton button, .stDownloadButton button { border: 1px solid var(--black) !important; border-left: 10px solid var(--orange) !important; background: var(--white) !important; border-radius: 0 !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; }
-    div[data-baseweb="select"] > div, [data-testid="stFileUploader"] section, textarea { border: 1px solid var(--black) !important; background: var(--white) !important; border-radius: 0 !important; }
-    div[data-baseweb="tag"] { background: var(--orange) !important; border: 1px solid var(--black) !important; border-radius: 0 !important; }
-    [role="radiogroup"] { gap: 0.7rem; }
-    @media (max-width: 900px) {
-        .block-container { padding: 1rem 1.25rem 4rem !important; }
-        .shell { padding: 2rem 1.6rem; }
-        .brand-signature { font-size: 5.2rem; }
-        .brand-sub { letter-spacing: 0.28em; font-size: 0.72rem; }
-        .metrics-grid, .case-grid { grid-template-columns: 1fr; }
-        .identity-panel, .section-panel { padding: 2rem 1.3rem; }
-        .body-copy { font-size: 1.07rem; line-height: 1.8; }
-        .bar-row { grid-template-columns: 92px 1fr 42px; gap: 0.7rem; }
-        .footer-signature { font-size: 5rem; }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+render_html(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600;700&display=swap');
+:root {{ --orange: {TENNESSEE_ORANGE}; --black: {BLACK}; --white: {WHITE}; }}
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background: var(--white) !important; color: var(--black) !important; }}
+[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], #MainMenu, footer {{ visibility: hidden !important; height: 0 !important; }}
+button[title="View fullscreen"], button[title="Exit fullscreen"], [data-testid="collapsedControl"] {{ display: none !important; }}
+.block-container {{ max-width: 1120px !important; padding: 2.2rem 3.2rem 5rem 3.2rem !important; }}
+p, li, div, label, span {{ font-family: 'Inter', sans-serif; color: var(--black); }}
+h1, h2, h3 {{ font-family: 'Cormorant Garamond', Georgia, serif !important; font-weight: 300 !important; letter-spacing: -0.055em !important; color: var(--black) !important; }}
+.main-frame {{ border-left: 2px solid var(--black); border-right: 2px solid var(--black); padding: 2.5rem 3.3rem 4rem 3.3rem; background: var(--white); }}
+.signature-lockup {{ border-top: 14px solid var(--orange); padding: 2.7rem 0 2.4rem 0; border-bottom: 8px solid var(--orange); margin-bottom: 4.5rem; }}
+.signature-name {{ font-family: 'Allura', cursive; font-size: clamp(5.7rem, 17vw, 12.5rem); line-height: 0.68; color: var(--black); letter-spacing: -0.045em; white-space: nowrap; }}
+.signature-sub {{ font-size: clamp(1.0rem, 2.2vw, 1.25rem); letter-spacing: 0.58em; text-transform: uppercase; margin-top: 1.35rem; font-weight: 400; }}
+.signature-intel {{ color: var(--orange); letter-spacing: 0.74em; text-transform: uppercase; margin-top: 1rem; font-size: clamp(0.95rem, 2vw, 1.1rem); }}
+.brand-line {{ height: 10px; width: 100%; background: var(--orange); margin: 3rem 0 4rem 0; }}
+.eyebrow {{ font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.42em; font-weight: 700; margin-bottom: 1.1rem; }}
+.hero-title {{ font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300; font-size: clamp(5.6rem, 14vw, 12rem); line-height: 0.78; letter-spacing: -0.075em; margin: 2.5rem 0 2.3rem 0; max-width: 900px; }}
+.hero-title .orange {{ color: var(--orange); }}
+.lead {{ font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.75; font-weight: 300; max-width: 920px; margin: 2rem 0 2.1rem 0; }}
+.chip-wrap {{ display: flex; flex-wrap: wrap; gap: 1rem; margin: 2.7rem 0 4.5rem 0; }}
+.chip {{ display: inline-flex; align-items: center; min-height: 58px; border: 1.5px solid var(--black); border-left: 16px solid var(--orange); padding: 0 1.55rem; font-size: 0.88rem; letter-spacing: 0.34em; text-transform: uppercase; font-weight: 700; white-space: nowrap; background: var(--white); }}
+.identity-card, .section-card {{ border: 1.5px solid var(--black); border-top: 10px solid var(--orange); padding: clamp(2rem, 5vw, 4.5rem); margin: 3.8rem 0; background: var(--white); }}
+.identity-head {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(3.2rem, 8vw, 7rem); line-height: 0.88; letter-spacing: -0.07em; font-weight: 300; margin: 1rem 0 2.2rem 0; }}
+.orange-rule {{ width: min(440px, 70%); height: 7px; background: var(--orange); margin: 2.4rem 0; }}
+.identity-copy {{ font-size: clamp(1.25rem, 2.4vw, 1.65rem); line-height: 1.7; font-weight: 300; max-width: 850px; }}
+.domain-line {{ font-size: 1.02rem; letter-spacing: 0.36em; text-transform: uppercase; font-weight: 700; line-height: 2; margin-top: 2rem; }}
+.metric-grid {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.2rem; align-items: stretch; margin: 3rem 0 4rem 0; }}
+.metric-card {{ border: 1.5px solid var(--black); border-left: 16px solid var(--orange); padding: 2.2rem 1.9rem; min-height: 230px; display: flex; flex-direction: column; justify-content: center; background: var(--white); overflow: hidden; }}
+.metric-number {{ font-family: 'Cormorant Garamond', Georgia, serif; color: var(--orange); font-weight: 300; letter-spacing: -0.07em; font-size: clamp(4rem, 8vw, 7.2rem); line-height: 0.85; margin: 0.6rem 0 1.1rem 0; white-space: nowrap; }}
+.metric-note {{ font-size: 1.05rem; line-height: 1.45; font-weight: 300; }}
+.control-panel {{ border: 1.5px solid var(--black); border-top: 10px solid var(--orange); padding: 2rem; margin: 2rem 0 3rem 0; }}
+.module-title {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(4rem, 10vw, 8rem); line-height: 0.88; letter-spacing: -0.07em; font-weight: 300; margin: 3.5rem 0 1.8rem 0; }}
+.case-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 2rem 0; align-items: stretch; }}
+.case-card {{ border: 1.5px solid var(--black); border-left: 14px solid var(--orange); padding: 1.7rem 1.8rem; min-height: 300px; background: var(--white); overflow: hidden; }}
+.case-title {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(3.2rem, 6vw, 5.6rem); line-height: 0.9; letter-spacing: -0.06em; font-weight: 300; margin-bottom: 1rem; }}
+.case-meta {{ font-size: 0.78rem; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 700; margin-bottom: 1rem; line-height: 1.6; overflow-wrap: anywhere; }}
+.case-row {{ font-size: 1rem; line-height: 1.6; margin: 0.65rem 0; overflow-wrap: anywhere; }}
+.table-scroll {{ overflow-x: auto; border: 1.5px solid var(--black); margin: 2rem 0 3rem 0; width: 100%; background: var(--white); }}
+.ops-table {{ width: 100%; min-width: 920px; border-collapse: collapse; table-layout: fixed; }}
+.ops-table th {{ background: var(--orange); color: var(--black); text-align: left; font-size: 0.78rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 1rem; border: 1px solid var(--black); }}
+.ops-table td {{ padding: 1rem; border: 1px solid var(--black); font-size: 0.95rem; line-height: 1.35; vertical-align: top; overflow-wrap: anywhere; }}
+.bar-box {{ border: 1.5px solid var(--black); border-top: 10px solid var(--orange); padding: 2rem; margin: 2.5rem 0; }}
+.bar-row {{ display: grid; grid-template-columns: 140px 1fr 70px; gap: 1.2rem; align-items: center; margin: 1.35rem 0; }}
+.bar-label {{ font-size: 1.25rem; font-weight: 300; }}
+.track {{ border: 1.5px solid var(--black); height: 28px; background: var(--white); }}
+.fill {{ height: 100%; background: var(--orange); }}
+.bar-number {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: 3rem; color: var(--orange); font-weight: 300; }}
+.footer-lockup {{ text-align: center; border-top: 8px solid var(--orange); border-bottom: 8px solid var(--orange); padding: 3rem 0; margin-top: 5rem; }}
+.footer-signature {{ font-family: 'Allura', cursive; font-size: clamp(4.2rem, 12vw, 8rem); line-height: 0.8; letter-spacing: -0.04em; }}
+.footer-text {{ font-size: 1.1rem; line-height: 1.7; max-width: 720px; margin: 1rem auto; }}
+.footer-links {{ display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }}
+.footer-link {{ border: 1.5px solid var(--black); border-left: 14px solid var(--orange); padding: 1rem 1.6rem; text-decoration: none !important; color: var(--black) !important; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 700; }}
+.stButton>button, .stDownloadButton>button {{ background: var(--white) !important; color: var(--black) !important; border: 1.5px solid var(--black) !important; border-left: 14px solid var(--orange) !important; border-radius: 0 !important; font-weight: 700 !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; }}
+.stSelectbox div[data-baseweb="select"], .stMultiSelect div[data-baseweb="select"], .stTextArea textarea, .stTextInput input, .stNumberInput input {{ border-radius: 0 !important; border-color: var(--black) !important; }}
+@media (max-width: 900px) {{
+    .block-container {{ padding: 1rem 0.85rem 3rem 0.85rem !important; }}
+    .main-frame {{ padding: 1.2rem 1.05rem 2.5rem 1.05rem; border-left: 1.5px solid var(--black); border-right: 1.5px solid var(--black); }}
+    .signature-name {{ font-size: clamp(4.9rem, 18vw, 7rem); white-space: normal; line-height: 0.72; }}
+    .signature-sub, .signature-intel {{ letter-spacing: 0.42em; font-size: 0.9rem; }}
+    .hero-title {{ font-size: clamp(4.5rem, 17vw, 6.5rem); line-height: 0.82; }}
+    .lead {{ font-size: 1.17rem; line-height: 1.75; }}
+    .chip-wrap {{ gap: 0.75rem; }}
+    .chip {{ min-height: 50px; font-size: 0.72rem; letter-spacing: 0.26em; padding: 0 1rem; max-width: 100%; white-space: normal; }}
+    .identity-card, .section-card {{ padding: 2rem 1.35rem; margin: 2.5rem 0; }}
+    .metric-grid {{ grid-template-columns: 1fr; gap: 1rem; }}
+    .metric-card {{ min-height: 180px; padding: 1.7rem 1.55rem; }}
+    .case-grid {{ grid-template-columns: 1fr; gap: 1rem; }}
+    .case-card {{ min-height: 245px; padding: 1.55rem 1.35rem; }}
+    .bar-row {{ grid-template-columns: 90px 1fr 46px; gap: 0.8rem; }}
+    .track {{ height: 22px; }}
+    .bar-number {{ font-size: 2.3rem; }}
+    .module-title {{ font-size: clamp(3.4rem, 16vw, 5.6rem); }}
+}}
+</style>
+""")
 
-uploaded = st.sidebar.file_uploader("Synthetic CSV upload only", type=["csv"])
-records, upload_message = parse_csv(uploaded)
+render_html('<div class="main-frame">')
 
-risks = sorted(set(row["risk"] for row in records))
-payers = sorted(set(row["payer"] for row in records))
-domains = sorted(set(row["domain"] for row in records))
-lines = sorted(set(row["line"] for row in records))
-
-risk_filter = st.sidebar.multiselect("Filter by risk level", risks, default=risks)
-payer_filter = st.sidebar.multiselect("Filter by payer group", payers, default=payers)
-domain_filter = st.sidebar.multiselect("Filter by workflow area", domains, default=domains)
-line_filter = st.sidebar.multiselect("Filter by service line", lines, default=lines)
-
-filtered = [
-    row for row in records
-    if row["risk"] in risk_filter
-    and row["payer"] in payer_filter
-    and row["domain"] in domain_filter
-    and row["line"] in line_filter
-]
-
-total, high, sla_count, exposure, owner_count, avg_ready = summary(filtered)
-
-st.markdown('<div class="shell">', unsafe_allow_html=True)
-
-st.markdown(
-    """
-    <div class="brand-signature">Kori Pickle</div>
-    <div class="brand-sub">Healthcare Operations<br>Intelligence</div>
+render_html("""
+<div class="signature-lockup">
+    <div class="signature-name">Kori Pickle</div>
+    <div class="signature-sub">Healthcare Operations</div>
+    <div class="signature-intel">Intelligence</div>
+</div>
+<div class="eyebrow">Kori Pickle • Healthcare Operations Intelligence</div>
+<div class="hero-title">Enterprise<br>Revenue<br><span class="orange">Operations</span><br>Platform</div>
+<div class="lead">A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, routing intelligence, documentation readiness, denial prevention, payer friction analysis, and responsible operational intelligence.</div>
+<div class="lead">This build functions as an operational review workbench: filter synthetic cases, isolate ownership gaps, simulate stabilization impact, generate escalation language, and build a leadership brief from the active command view.</div>
+<div class="chip-wrap">
+    <span class="chip">No PHI</span><span class="chip">Synthetic Data</span><span class="chip">Human Review Required</span><span class="chip">Built by Kori Pickle</span>
+</div>
+<div class="identity-card">
+    <div class="eyebrow">Operational Identity</div>
+    <div class="identity-head">Workflow visibility before revenue damage.</div>
     <div class="orange-rule"></div>
-    <div class="eyebrow">Kori Pickle • Healthcare Operations Intelligence</div>
-    <div class="hero-title">Enterprise<br>Revenue<br><span>Operations</span><br>Platform</div>
-    <div class="body-copy">
-        A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, routing intelligence, documentation readiness, denial prevention, payer friction analysis, and responsible operational intelligence.
-        <br><br>
-        This build functions as an operational review workbench: filter synthetic cases, isolate ownership gaps, simulate stabilization impact, generate escalation language, and build a leadership brief from the active command view.
+    <div class="identity-copy">Designed around one question: where did the workflow first lose control?</div>
+    <div class="domain-line">Patient Access • Authorization Control • Documentation Readiness • Denial Prevention</div>
+</div>
+""")
+
+uploaded = st.file_uploader("Synthetic CSV upload only", type=["csv"], label_visibility="collapsed")
+rows, upload_message = parse_csv(uploaded)
+st.caption(upload_message)
+
+all_risks = sorted({row["risk"] for row in rows})
+all_payers = sorted({row["payer"] for row in rows})
+all_domains = sorted({row["domain"] for row in rows})
+all_lines = sorted({row["line"] for row in rows})
+
+with st.expander("Command Filters", expanded=False):
+    c1, c2 = st.columns(2)
+    with c1:
+        selected_risks = st.multiselect("Filter by risk level", all_risks, default=all_risks)
+        selected_domains = st.multiselect("Filter by workflow area", all_domains, default=all_domains)
+    with c2:
+        selected_payers = st.multiselect("Filter by payer group", all_payers, default=all_payers)
+        selected_lines = st.multiselect("Filter by service line", all_lines, default=all_lines)
+
+filtered_rows = [row for row in rows if row["risk"] in selected_risks and row["payer"] in selected_payers and row["domain"] in selected_domains and row["line"] in selected_lines]
+if not filtered_rows:
+    filtered_rows = rows
+
+total, high, sla, exposure, owners, avg_ready = summary(filtered_rows)
+render_html("<div class='metric-grid'>" +
+            metric_card("High Risk Records", high, "Prioritized operational review queue.") +
+            metric_card("SLA Pressure", sla, "Records aged at or above SLA limit.") +
+            metric_card("Synthetic Exposure", money(exposure), "Portfolio simulation only.") +
+            metric_card("Readiness Average", avg_ready, "Aggregate workflow readiness score.") +
+            "</div>")
+
+modules = [
+    "Command Center", "Case Review Workbench", "Workflow Loss Control Method", "Authorization Readiness Engine",
+    "Missing Documentation Detector", "SLA Countdown", "Human Review Log", "Executive Brief Builder",
+    "About Kori", "Stabilization Simulator", "2027 API Checklist"
+]
+module = st.selectbox("Select module", modules, index=0)
+case_ids = [row["id"] for row in filtered_rows]
+selected_id = st.selectbox("Select synthetic case for review", case_ids, index=0)
+selected_case = next(row for row in filtered_rows if row["id"] == selected_id)
+
+if module == "Command Center":
+    render_html('<div class="module-title">Live Command Center</div>')
+    render_html('<div class="lead">Use the filters above to isolate operational pressure across payer group, workflow domain, service line, and risk level.</div>')
+    render_html('<div class="case-grid">' + ''.join(case_card(row) for row in filtered_rows) + '</div>')
+    render_html(record_table(filtered_rows))
+    risk_counts = Counter(row["risk"] for row in filtered_rows)
+    max_risk = max(risk_counts.values()) if risk_counts else 1
+    render_html('<div class="bar-box"><div class="eyebrow">Risk Queue Distribution</div>' + ''.join(progress_row(label, risk_counts.get(label, 0), max_risk) for label in ["High", "Moderate", "Low"]) + '</div>')
+    render_html(f'<div class="section-card"><div class="module-title" style="margin-top:0;">Executive Interpretation</div><div class="identity-copy">The active view shows {total} synthetic records, {high} high risk records, {sla} SLA pressure signals, {owners} distinct owners, average readiness of {avg_ready}, and {money(exposure)} in simulated exposure. These are prioritization signals for human review, not automated payer or clinical decisions.</div></div>')
+
+elif module == "Case Review Workbench":
+    render_html('<div class="module-title">Case Review Workbench</div>')
+    render_html(case_card(selected_case))
+    remaining, sla_label, timing = sla_status(selected_case)
+    render_html(f"""
+    <div class="section-card">
+        <div class="eyebrow">Selected Case Operating Pathway</div>
+        <div class="case-row"><strong>What failed:</strong> {esc(first_failed_domain(selected_case))}</div>
+        <div class="case-row"><strong>Where it failed:</strong> {esc(selected_case['domain'])}</div>
+        <div class="case-row"><strong>Why it matters:</strong> {esc(selected_case['rule'])}</div>
+        <div class="case-row"><strong>Who owns it:</strong> {esc(selected_case['owner'])}</div>
+        <div class="case-row"><strong>SLA status:</strong> {esc(sla_label)} • {abs(remaining)} day(s) {'past SLA' if remaining < 0 else 'remaining'}</div>
+        <div class="case-row"><strong>Escalation timing:</strong> {esc(timing)}</div>
+        <div class="case-row"><strong>Leadership should know:</strong> This record needs human review because workflow control is unstable before downstream revenue or access impact occurs.</div>
     </div>
-    <div class="badges">
-        <div class="badge">No PHI</div>
-        <div class="badge">Synthetic Data</div>
-        <div class="badge">Human Review Required</div>
-        <div class="badge">Built by Kori Pickle</div>
-    </div>
-    <div class="identity-panel">
-        <div class="eyebrow">Operational Identity</div>
-        <div class="identity-title">Workflow visibility before revenue damage.</div>
-        <div class="body-copy">Designed around one question: where did the workflow first lose control?</div>
-        <div class="eyebrow" style="margin-top:2rem">Patient Access • Authorization Control • Documentation Readiness • Denial Prevention</div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    """)
+    note = st.text_area("Human review note", placeholder="Document reviewer observation, action taken, escalation status, and follow-up date.")
+    if note:
+        st.success("Human review note captured for this session. Do not enter PHI.")
 
-metric_block = (
-    metric_html("High Risk Records", high, "Prioritized operational review queue.")
-    + metric_html("SLA Pressure", sla_count, "Records aged at or above SLA limit.")
-    + metric_html("Synthetic Exposure", money(exposure), "Portfolio simulation only.")
-    + metric_html("Readiness Average", avg_ready, "Aggregate workflow readiness score.")
-)
-st.markdown(f'<div class="metrics-grid">{metric_block}</div>', unsafe_allow_html=True)
+elif module == "Workflow Loss Control Method":
+    render_html('<div class="module-title">Workflow Loss Control Method™</div>')
+    render_html('<div class="lead">Kori Pickle’s original method identifies where front-end revenue cycle control was first lost before the issue becomes a denial, access delay, rework burden, or payer escalation.</div>')
+    scores = wlcm_scores(selected_case)
+    max_score = 100
+    render_html('<div class="bar-box"><div class="eyebrow">Five Control Domains</div>' + ''.join(progress_row(domain, int(score), max_score) for domain, score in scores.items()) + '</div>')
+    render_html(f'<div class="section-card"><div class="case-row"><strong>First failed control domain:</strong> {esc(first_failed_domain(selected_case))}</div><div class="case-row"><strong>Stability status:</strong> {esc(stability_status(selected_case))}</div><div class="case-row"><strong>Required action:</strong> {esc(selected_case["action"])}</div></div>')
 
-nav = st.radio(
-    "Platform module",
-    [
-        "Command Center",
-        "Case Review Workbench",
-        "Workflow Loss Control Method",
-        "Authorization Readiness Engine",
-        "Missing Documentation Detector",
-        "SLA Countdown",
-        "Human Review Log",
-        "Executive Brief Builder",
-        "About Kori",
-        "Stabilization Simulator",
-        "2027 API Checklist"
-    ],
-    horizontal=True,
-    label_visibility="collapsed"
-)
+elif module == "Authorization Readiness Engine":
+    factors, score, status = auth_readiness(selected_case)
+    render_html('<div class="module-title">Authorization Readiness Engine</div>')
+    render_html(metric_card("Authorization Readiness", f"{score}%", status))
+    rows_html = ''.join(f'<div class="case-row"><strong>{esc(name)}:</strong> {"Met" if value else "Gap"}</div>' for name, value in factors.items())
+    render_html(f'<div class="section-card"><div class="eyebrow">Readiness Factors</div>{rows_html}</div>')
 
-case_options = [row["id"] for row in filtered] or [row["id"] for row in records]
-selected_id = st.selectbox("Select synthetic case for review", case_options)
-active_case = next((row for row in records if row["id"] == selected_id), records[0])
+elif module == "Missing Documentation Detector":
+    missing = missing_docs(selected_case)
+    render_html('<div class="module-title">Missing Documentation Detector</div>')
+    if missing:
+        render_html('<div class="section-card"><div class="eyebrow">Detected Documentation Gaps</div>' + ''.join(chip(item) for item in missing) + f'<div class="lead">Operational impact: {esc(selected_case["rule"])}</div><div class="case-row"><strong>Next action:</strong> {esc(selected_case["action"])}</div><div class="case-row"><strong>Owner:</strong> {esc(selected_case["owner"])}</div></div>')
+    else:
+        render_html('<div class="section-card"><div class="identity-copy">No missing documentation detected for this synthetic case.</div></div>')
 
-if upload_message:
-    st.markdown(f'<div class="badge">{esc(upload_message)}</div>', unsafe_allow_html=True)
+elif module == "SLA Countdown":
+    remaining, sla_label, timing = sla_status(selected_case)
+    render_html('<div class="module-title">SLA Breach Countdown</div>')
+    render_html("<div class='metric-grid'>" + metric_card("Days Open", selected_case["days"], "Current aging") + metric_card("SLA Limit", selected_case["sla"], "Operational threshold") + metric_card("SLA Status", sla_label, timing) + metric_card("Days Delta", abs(remaining), "Past SLA" if remaining < 0 else "Remaining") + "</div>")
 
-if nav == "Command Center":
-    st.markdown('<div class="section-title">Live Command Center</div>', unsafe_allow_html=True)
-    st.markdown('<div class="body-copy">Use the sidebar filters to isolate operational pressure across payer group, workflow domain, service line, and risk level.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="case-grid">' + "".join(case_card_html(row) for row in filtered) + '</div>', unsafe_allow_html=True)
-    render_table(filtered)
-    st.markdown('<div class="section-panel"><div class="eyebrow">Risk Queue Distribution</div>', unsafe_allow_html=True)
-    counts = Counter(row["risk"] for row in filtered)
-    max_count = max(counts.values()) if counts else 1
-    bar_block = "".join(bar_html(label, counts.get(label, 0), max_count) for label in ["High", "Moderate", "Low"])
-    st.markdown(bar_block + '</div>', unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div class="section-panel">
-            <div class="section-title">Executive Interpretation</div>
-            <div class="body-copy">The active view shows {total} synthetic records, {high} high risk records, {sla_count} SLA pressure signals, {owner_count} distinct owners, average readiness of {avg_ready}, and {money(exposure)} in simulated exposure. These are prioritization signals for human review, not automated payer or clinical decisions.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-elif nav == "Case Review Workbench":
-    docs = missing_docs(active_case)
-    miss = ", ".join(docs) if docs else "None detected"
-    remaining, sla_label, timing = sla_status(active_case)
-    factors, ar_score, ar_status = auth_readiness(active_case)
-    st.markdown('<div class="section-title">Case Review Workbench</div>', unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div class="section-panel">
-            <div class="eyebrow">{esc(active_case["id"])} • {esc(active_case["risk"])} Risk</div>
-            <div class="identity-title">{esc(active_case["domain"])}</div>
-            <div class="small-list">
-                <b>Payer Group:</b> {esc(active_case["payer"])}<br>
-                <b>Service Line:</b> {esc(active_case["line"])}<br>
-                <b>Assigned Owner:</b> {esc(active_case["owner"])}<br>
-                <b>Days Open:</b> {esc(active_case["days"])}<br>
-                <b>SLA Status:</b> {esc(sla_label)}<br>
-                <b>Missing Documentation:</b> {esc(miss)}<br>
-                <b>Readiness Score:</b> {esc(readiness_score(active_case))}<br>
-                <b>Control Loss Domain:</b> {esc(first_failed_domain(active_case))}<br>
-                <b>Recommended Next Action:</b> {esc(active_case["action"])}<br>
-                <b>Escalation Language:</b> Please review {esc(active_case["id"])} because the case is showing {esc(sla_label.lower())} status, {esc(active_case["risk"].lower())} risk, and documentation or routing gaps requiring human review before further workflow movement.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    note = st.text_area("Human review note", value=f"Reviewed {active_case['id']}. Next action assigned to {active_case['owner']}.")
-    st.download_button("Download case review note", note, file_name=f"{active_case['id']}_human_review_note.txt")
-
-elif nav == "Workflow Loss Control Method":
-    scores = wlcm_scores(active_case)
-    st.markdown('<div class="section-title">Workflow Loss Control Method™</div>', unsafe_allow_html=True)
-    st.markdown('<div class="body-copy">This method identifies where the workflow first lost control before the issue becomes denial activity, access delay, rework burden, or revenue leakage.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-panel"><div class="eyebrow">Five Control Domains</div>', unsafe_allow_html=True)
-    st.markdown("".join(bar_html(domain, int(scores[domain]), 100) for domain in CONTROL_DOMAINS) + '</div>', unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div class="section-panel">
-            <div class="eyebrow">Selected Case Output</div>
-            <div class="small-list">
-                <b>First Failed Control Domain:</b> {esc(first_failed_domain(active_case))}<br>
-                <b>Current Operational Risk:</b> {esc(active_case["risk"])}<br>
-                <b>Next Owner:</b> {esc(active_case["owner"])}<br>
-                <b>Required Action:</b> {esc(active_case["action"])}<br>
-                <b>Stability Status:</b> {esc(stability_status(active_case))}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-elif nav == "Authorization Readiness Engine":
-    factors, ar_score, ar_status = auth_readiness(active_case)
-    st.markdown('<div class="section-title">Authorization Readiness Engine</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="section-panel"><div class="eyebrow">Readiness Output</div><div class="metric-number">{ar_score}</div><div class="body-copy">Status: {esc(ar_status)}</div></div>', unsafe_allow_html=True)
-    factor_cards = "".join(
-        f'<div class="case-card"><div class="eyebrow">{esc(factor)}</div><div class="case-row">{"Complete" if result else "Needs Review"}</div></div>'
-        for factor, result in factors.items()
-    )
-    st.markdown('<div class="case-grid">' + factor_cards + '</div>', unsafe_allow_html=True)
-
-elif nav == "Missing Documentation Detector":
-    st.markdown('<div class="section-title">Missing Documentation Detector</div>', unsafe_allow_html=True)
-    docs = missing_docs(active_case)
-    impact = "Authorization readiness is reduced because required documentation is missing from the operational packet." if docs else "No missing documentation detected in this synthetic case."
-    st.markdown(
-        f"""
-        <div class="section-panel">
-            <div class="eyebrow">{esc(active_case["id"])}</div>
-            <div class="small-list">
-                <b>Missing:</b> {esc(", ".join(docs) if docs else "None detected")}<br>
-                <b>Documentation Gap Summary:</b> {esc(active_case["rule"])}<br>
-                <b>Operational Impact:</b> {esc(impact)}<br>
-                <b>Next Action:</b> {esc(active_case["action"])}<br>
-                <b>Owner:</b> {esc(active_case["owner"])}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-elif nav == "SLA Countdown":
-    remaining, sla_label, timing = sla_status(active_case)
-    days = int(active_case["days"])
-    sla = int(active_case["sla"])
-    past = max(0, days - sla)
-    st.markdown('<div class="section-title">SLA Breach Countdown</div>', unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div class="section-panel">
-            <div class="eyebrow">{esc(active_case["id"])}</div>
-            <div class="small-list">
-                <b>SLA Status:</b> {esc(sla_label)}<br>
-                <b>Days Open:</b> {esc(days)}<br>
-                <b>SLA Limit:</b> {esc(sla)}<br>
-                <b>Days Remaining:</b> {esc(remaining)}<br>
-                <b>Days Past SLA:</b> {esc(past)}<br>
-                <b>Escalation Timing:</b> {esc(timing)}<br>
-                <b>Action:</b> {esc(active_case["action"])}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-elif nav == "Human Review Log":
-    st.markdown('<div class="section-title">Human Review Log</div>', unsafe_allow_html=True)
+elif module == "Human Review Log":
+    render_html('<div class="module-title">Human Review Log</div>')
     reviewer = st.text_input("Reviewer name", value="Kori Pickle")
-    action_taken = st.selectbox("Action taken", ["Documentation request", "Eligibility review", "Payer follow up", "Routing correction", "Escalation", "Monitor"])
-    decision_status = st.selectbox("Decision status", ["Open", "In Review", "Escalated", "Stabilized", "Closed"])
-    escalation = st.selectbox("Escalation required", ["Yes", "No"])
-    follow_up = st.date_input("Follow-up date")
-    notes = st.text_area("Notes", value=f"{active_case['id']} reviewed. Assigned owner: {active_case['owner']}. Next action: {active_case['action']}")
-    log_text = f"""Human Review Log
-Reviewer: {reviewer}
-Review Date: {date.today().isoformat()}
-Case ID: {active_case["id"]}
-Action Taken: {action_taken}
-Decision Status: {decision_status}
-Notes: {notes}
-Escalation Required: {escalation}
-Follow-up Date: {follow_up}
-"""
-    st.markdown(f'<div class="brief-box">{esc(log_text)}</div>', unsafe_allow_html=True)
-    st.download_button("Download human review log", log_text, file_name=f"{active_case['id']}_human_review_log.txt")
+    action_taken = st.selectbox("Action taken", ["Documentation request", "Eligibility follow-up", "Payer route correction", "Authorization escalation", "Ready for submission", "Leadership escalation"])
+    decision_status = st.selectbox("Decision status", ["Open", "In Review", "Escalated", "Completed"])
+    notes = st.text_area("Review notes", placeholder="Use synthetic details only. Do not enter PHI.")
+    follow_date = st.date_input("Follow-up date")
+    st.download_button("Download Human Review Log Entry", f"Reviewer: {reviewer}\nDate: {date.today()}\nCase: {selected_case['id']}\nAction: {action_taken}\nStatus: {decision_status}\nNotes: {notes}\nFollow up: {follow_date}\n", file_name="human_review_log_entry.txt")
 
-elif nav == "Executive Brief Builder":
-    st.markdown('<div class="section-title">Executive Brief Builder</div>', unsafe_allow_html=True)
-    brief_text = executive_brief(filtered)
-    st.markdown(f'<div class="brief-box">{esc(brief_text)}</div>', unsafe_allow_html=True)
-    st.download_button("Download executive brief", brief_text, file_name="enterprise_revenue_operations_brief.txt")
+elif module == "Executive Brief Builder":
+    render_html('<div class="module-title">Executive Brief Builder</div>')
+    brief = executive_brief(filtered_rows)
+    st.text_area("Leadership brief generated from the active command view", brief, height=420)
+    st.download_button("Download Executive Brief", brief, file_name="kori_pickle_executive_brief.txt")
 
-elif nav == "About Kori":
-    st.markdown('<div class="section-title">About Kori</div>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="section-panel">
-            <div class="eyebrow">Professional Portfolio Statement</div>
-            <div class="body-copy">
-                Kori Pickle is a BSHA candidate focused on healthcare operations, revenue cycle workflow analysis, patient access, prior authorization, denial prevention, documentation readiness, and operational visibility.
-                <br><br>
-                Her work is shaped by a patient-to-professional perspective and a practical interest in how healthcare systems can identify workflow breakdowns earlier, assign ownership more clearly, and reduce avoidable rework before it becomes patient access friction or downstream revenue cycle damage.
-                <br><br>
-                This portfolio platform demonstrates healthcare administration thinking through synthetic operational data, workflow review logic, responsible human oversight, and leadership-ready reporting.
-            </div>
-        </div>
-        <div class="section-panel">
-            <div class="eyebrow">Why This Tool Exists</div>
-            <div class="body-copy">
-                Most revenue cycle issues appear downstream, but many begin upstream in patient access, eligibility verification, authorization readiness, documentation completeness, payer routing, and ownership gaps.
-                <br><br>
-                This platform demonstrates how synthetic operational data can be used to identify where workflow control was lost before the issue becomes a denial, delay, rework burden, or patient access problem.
-            </div>
-        </div>
-        <div class="section-panel">
-            <div class="eyebrow">Portfolio Use Statement</div>
-            <div class="body-copy">
-                This platform is a synthetic portfolio demonstration. It does not process PHI, make payer decisions, make billing determinations, make coding decisions, or provide clinical recommendations.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-elif nav == "Stabilization Simulator":
-    st.markdown('<div class="section-title">Before-and-After Stabilization Simulator</div>', unsafe_allow_html=True)
-    doc_gain = st.slider("Documentation completion improvement", 0, 50, 20)
-    sla_gain = st.slider("SLA follow-up improvement", 0, 50, 15)
-    routing_gain = st.slider("Routing accuracy improvement", 0, 50, 10)
-    current_risk = high + sla_count
-    projected_risk = max(0, round(current_risk * (1 - (doc_gain + sla_gain + routing_gain) / 220)))
-    projected_exposure = max(0, round(exposure * (1 - (doc_gain + sla_gain + routing_gain) / 250)))
-    sim_metrics = (
-        metric_html("Current Pressure", current_risk, "Current combined risk and SLA signals.")
-        + metric_html("Projected Pressure", projected_risk, "After stabilization inputs.")
-        + metric_html("Current Exposure", money(exposure), "Synthetic simulation only.")
-        + metric_html("Projected Exposure", money(projected_exposure), "Estimated stabilized exposure.")
-    )
-    st.markdown(f'<div class="metrics-grid">{sim_metrics}</div>', unsafe_allow_html=True)
-
-elif nav == "2027 API Checklist":
-    st.markdown('<div class="section-title">2027 API Readiness Checklist</div>', unsafe_allow_html=True)
-    items = [
-        "Synthetic data standard documented",
-        "No PHI processing in public portfolio environment",
-        "Human review requirement displayed",
-        "Case ownership field available",
-        "SLA field available",
-        "Missing documentation field available",
-        "Payer rule field available",
-        "CSV import validation available",
-        "Executive brief export available",
-        "Workflow Loss Control Method available",
-        "Clear disclaimer against clinical, payer, billing, or coding decisions"
-    ]
-    checklist_cards = "".join(
-        f'<div class="case-card"><div class="eyebrow">Ready Signal</div><div class="case-row">{esc(item)}</div></div>'
-        for item in items
-    )
-    st.markdown('<div class="case-grid">' + checklist_cards + '</div>', unsafe_allow_html=True)
-
-st.markdown(
-    f"""
-    <div class="footer-brand">
-        <div class="eyebrow">Created by Kori Pickle</div>
-        <div class="footer-signature">Kori Pickle</div>
-        <div class="body-copy" style="margin:auto">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</div>
-        <div class="footer-links">
-            <a href="{LINKEDIN_URL}" target="_blank">LinkedIn</a>
-            <a href="{GITHUB_URL}" target="_blank">GitHub</a>
-        </div>
+elif module == "About Kori":
+    render_html("""
+    <div class="module-title">About Kori</div>
+    <div class="section-card">
+        <div class="eyebrow">Professional Portfolio Positioning</div>
+        <div class="identity-copy">Kori Pickle is a BSHA candidate focused on healthcare operations, revenue cycle workflow analysis, patient access, prior authorization readiness, denial prevention, documentation readiness, health informatics, and workflow visibility. Her work is shaped by a patient-to-professional perspective and a practical interest in how upstream operational breakdowns become downstream delays, rework, denials, and patient access friction.</div>
+        <div class="orange-rule"></div>
+        <div class="case-row"><strong>Current academic standing:</strong> 99 of 120 credits completed • GPA 3.6</div>
+        <div class="case-row"><strong>Core focus:</strong> healthcare operations intelligence, front-end revenue cycle control, authorization readiness, workflow stabilization, responsible human review</div>
+        <div class="case-row"><strong>Portfolio statement:</strong> This public platform demonstrates synthetic operational logic only. It does not process PHI or replace payer, billing, coding, or clinical judgment.</div>
     </div>
-    """,
-    unsafe_allow_html=True
-)
+    """)
 
-st.markdown('</div>', unsafe_allow_html=True)
+elif module == "Stabilization Simulator":
+    render_html('<div class="module-title">Before-and-After Stabilization Simulator</div>')
+    closure_gain = st.slider("Documentation gap closure target", 0, 100, 45)
+    follow_gain = st.slider("Follow-up reliability improvement", 0, 100, 35)
+    new_score = min(100, round(avg_ready + closure_gain * 0.28 + follow_gain * 0.18, 1))
+    avoided = int(exposure * (new_score - avg_ready) / 100)
+    render_html("<div class='metric-grid'>" + metric_card("Current Readiness", avg_ready, "Active filtered view") + metric_card("Projected Readiness", new_score, "After stabilization") + metric_card("Exposure Stabilized", money(max(0, avoided)), "Synthetic estimate") + metric_card("Leadership Focus", common_missing(filtered_rows), "Most common gap") + "</div>")
+
+elif module == "2027 API Checklist":
+    render_html('<div class="module-title">2027 API Readiness Checklist</div>')
+    items = ["Synthetic data governance", "No PHI public deployment", "Human review workflow", "Audit log structure", "Payer route field", "Authorization status field", "Documentation gap field", "SLA timestamp field", "Owner assignment field", "Exportable leadership brief"]
+    checked = []
+    for item in items:
+        if st.checkbox(item, value=True):
+            checked.append(item)
+    render_html(metric_card("API Readiness", f"{len(checked)} / {len(items)}", "Portfolio maturity checklist"))
+
+render_html(f"""
+<div class="footer-lockup">
+    <div class="eyebrow">Created by Kori Pickle</div>
+    <div class="footer-signature">Kori Pickle</div>
+    <div class="footer-text">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</div>
+    <div class="footer-links"><a class="footer-link" href="{LINKEDIN_URL}" target="_blank">LinkedIn</a><a class="footer-link" href="{GITHUB_URL}" target="_blank">GitHub</a></div>
+</div>
+""")
+render_html('</div>')

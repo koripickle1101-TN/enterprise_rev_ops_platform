@@ -1,0 +1,26 @@
+Kori Pickle Workflow Loss Control Method
+
+Purpose
+This portfolio method helps healthcare operations teams identify where a workflow first lost control before the breakdown becomes authorization delay, payer friction, rework, denial risk, staff burden, or patient access frustration.
+
+Core Question
+Where did the workflow first lose control?
+
+Five Control Domains
+Patient Access Control
+Authorization Readiness Control
+Documentation Control
+Ownership Control
+Time Control
+
+Output Categories
+Stable
+Watch
+Control Loss
+Escalation Required
+
+Human Review Boundary
+This method does not automate payer decisions, clinical decisions, billing determinations, coding determinations, or patient specific recommendations. It supports operational visibility using synthetic data only.
+
+Portfolio Value
+A dashboard reports activity. This method explains where control failed, why the record needs attention, who owns the next action, and what should be stabilized before downstream damage occurs.

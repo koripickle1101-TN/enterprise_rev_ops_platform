@@ -1,27 +1,38 @@
-import streamlit as st
-import pandas as pd
+import base64
+from io import BytesIO
 from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 
 st.set_page_config(
     page_title="Enterprise Revenue Operations Platform",
-    page_icon="🟠",
+    page_icon="KP",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
+TENNESSEE_ORANGE = "rgb(255, 130, 0)"
+BLACK = "rgb(0, 0, 0)"
+WHITE = "rgb(255, 255, 255)"
 
-def load_logo():
+
+def get_logo_bytes():
     logo_path = Path("assets/brand_logo.b64")
     if logo_path.exists():
-        return logo_path.read_text().strip()
-    return ""
+        try:
+            return base64.b64decode(logo_path.read_text().strip())
+        except Exception:
+            return None
+    return None
 
 
-logo_b64 = load_logo()
+logo_bytes = get_logo_bytes()
 
-st.markdown("""
+st.markdown(
+    """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap');
 
 :root {
     --orange: rgb(255, 130, 0);
@@ -35,22 +46,23 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-
 }
 
 .block-container {
-    padding-top: 2.4rem !important;
+    max-width: 1440px !important;
+    padding-top: 2rem !important;
     padding-left: 4.5rem !important;
     padding-right: 4.5rem !important;
-    padding-bottom: 4rem !important;
-    max-width: 1480px !important;
+    padding-bottom: 5rem !important;
+}
+
+p, div, label, span, button, input, textarea {
+    font-family: Inter, Arial, sans-serif !important;
+    color: var(--black) !important;
 }
 
 h1, h2, h3 {
-    font-family: "Playfair Display", Georgia, serif !important;
-    color: var(--black) !important;
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-weight: 400 !important;
     letter-spacing: -0.045em !important;
-    font-weight: 600 !important;
-}
-
-p, div, label, span, button {
-    font-family: Inter, Arial, sans-serif !important;
+    color: var(--black) !important;
 }
 
 [data-testid="stSidebar"] {
@@ -58,299 +70,271 @@ p, div, label, span, button {
     border-right: 2px solid var(--black) !important;
 }
 
-[data-testid="stSidebar"] label {
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {
     color: var(--black) !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.04em !important;
 }
 
-[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p {
-    color: var(--black) !important;
+[data-testid="stSidebar"] label {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase !important;
 }
 
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
-textarea {
+textarea,
+[data-testid="stTextArea"] textarea {
     background: var(--white) !important;
-    color: var(--black) !important;
-    border: 2px solid var(--black) !important;
+    border: 1.6px solid var(--black) !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    color: var(--black) !important;
 }
 
 span[data-baseweb="tag"], [data-baseweb="tag"] {
     background: var(--white) !important;
     color: var(--black) !important;
-    border: 2px solid var(--orange) !important;
+    border: 1.6px solid var(--orange) !important;
     border-radius: 0 !important;
-    font-weight: 700 !important;
+    font-weight: 500 !important;
 }
 
 .stTabs [data-baseweb="tab-list"] {
-    gap: 0.7rem;
+    gap: 0.65rem;
+    border-bottom: 1.6px solid var(--black);
+    padding-bottom: 0.6rem;
 }
 
 .stTabs [data-baseweb="tab"] {
     background: var(--white) !important;
-    color: var(--black) !important;
-    border: 2px solid var(--black) !important;
+    border: 1.6px solid var(--black) !important;
     border-radius: 0 !important;
-    padding: 0.75rem 1.1rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.03em !important;
+    padding: 0.7rem 1rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.04em !important;
 }
 
 .stTabs [aria-selected="true"] {
-    background: var(--black) !important;
-    color: var(--white) !important;
-    border-color: var(--black) !important;
+    background: var(--orange) !important;
+    border-color: var(--orange) !important;
 }
 
 .stTabs [aria-selected="true"] p {
-    color: var(--white) !important;
+    color: var(--black) !important;
 }
 
-.brand-shell {
-    border: 2px solid var(--black);
-    background: var(--white);
-    padding: 2.35rem;
+.hero-shell {
+    border-left: 2px solid var(--black);
+    border-right: 2px solid var(--black);
+    padding: 2rem 2.2rem 2.3rem 2.2rem;
     margin-bottom: 2rem;
 }
 
-.brand-logo {
+.brand-rule {
     width: 100%;
-    max-width: 940px;
-    display: block;
-    margin: 0 auto 2.3rem auto;
-}
-
-.hero {
-    display: grid;
-    grid-template-columns: 1.08fr 0.92fr;
-    gap: 2.35rem;
-    align-items: stretch;
-}
-
-.hero-left {
-    border-top: 8px solid var(--orange);
-    padding-top: 2rem;
+    height: 9px;
+    background: var(--orange);
+    margin: 1.5rem 0 2.1rem 0;
 }
 
 .kicker {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     letter-spacing: 0.34em;
     text-transform: uppercase;
-    font-weight: 800;
+    font-weight: 600;
     color: var(--black);
     margin-bottom: 1.1rem;
 }
 
+.hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(310px, 0.8fr);
+    gap: 2rem;
+    align-items: stretch;
+}
+
 .hero-title {
-    font-family: "Playfair Display", Georgia, serif !important;
-    font-size: clamp(3.6rem, 7vw, 6.8rem);
-    line-height: 0.92;
-    letter-spacing: -0.065em;
-    font-weight: 600;
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: clamp(4.2rem, 8vw, 8rem);
+    line-height: 0.82;
+    letter-spacing: -0.075em;
+    font-weight: 400;
     color: var(--black);
     margin: 0;
 }
 
 .orange-word {
     color: var(--orange);
+    font-weight: 400;
 }
 
 .hero-copy {
-    max-width: 830px;
-    margin-top: 1.7rem;
-    font-size: 1.08rem;
-    line-height: 1.78;
-    font-weight: 600;
-    color: var(--black);
+    max-width: 900px;
+    margin-top: 1.8rem;
+    font-size: 1.04rem;
+    line-height: 1.8;
+    font-weight: 400;
 }
 
-.identity-card {
-    border: 2px solid var(--black);
+.identity-panel {
+    border: 1.6px solid var(--black);
     padding: 2rem;
-    min-height: 395px;
-    position: relative;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 420px;
     background: var(--white);
 }
 
-.identity-card:before {
-    content: "";
-    position: absolute;
-    width: 210px;
-    height: 210px;
-    border: 5px solid var(--orange);
-    border-radius: 50%;
-    top: -45px;
-    right: -45px;
-    box-shadow: inset 0 0 0 28px var(--white), inset 0 0 0 32px var(--orange);
+.identity-statement {
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: clamp(2.2rem, 4.5vw, 4rem);
+    line-height: 0.93;
+    letter-spacing: -0.055em;
+    font-weight: 400;
 }
 
-.identity-title {
-    position: relative;
-    z-index: 2;
-    margin-top: 10rem;
-    font-family: "Playfair Display", Georgia, serif !important;
-    font-size: clamp(2.1rem, 4vw, 3.45rem);
-    line-height: 1;
-    letter-spacing: -0.045em;
-    font-weight: 600;
-    color: var(--black);
-}
-
-.identity-card p {
-    position: relative;
-    z-index: 2;
-    font-size: 1rem;
-    line-height: 1.65;
-    font-weight: 600;
-    color: var(--black);
-}
-
-.badge-row {
-    margin-top: 1.25rem;
+.signature-line {
+    height: 2px;
+    background: var(--orange);
+    width: 64%;
+    margin: 1.4rem 0;
 }
 
 .badge {
     display: inline-block;
-    border: 2px solid var(--black);
+    border: 1.6px solid var(--black);
     border-left: 8px solid var(--orange);
-    padding: 0.55rem 0.85rem;
+    padding: 0.6rem 0.85rem;
     margin: 0.35rem 0.35rem 0.35rem 0;
     font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    font-weight: 600;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
-    color: var(--black);
     background: var(--white);
 }
 
 .metric-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1.25rem;
-    margin: 2rem 0;
+    gap: 1rem;
+    margin: 1.75rem 0 2.4rem 0;
 }
 
 .metric-card {
+    border: 1.6px solid var(--black);
     background: var(--white);
-    color: var(--black);
-    border: 2px solid var(--black);
-    border-top: 7px solid var(--orange);
-    padding: 1.5rem;
-    min-height: 180px;
+    padding: 1.55rem;
+    min-height: 170px;
+    position: relative;
+}
+
+.metric-card:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 7px;
+    height: 100%;
+    background: var(--orange);
 }
 
 .metric-label {
     font-size: 0.68rem;
     letter-spacing: 0.24em;
     text-transform: uppercase;
-    font-weight: 800;
-    color: var(--black);
+    font-weight: 600;
     margin-bottom: 0.9rem;
 }
 
 .metric-value {
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif !important;
-    font-size: clamp(3rem, 5.4vw, 5.4rem);
-    font-weight: 500;
-    letter-spacing: -0.035em;
-    line-height: 0.9;
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: clamp(2.7rem, 4.6vw, 4.9rem);
+    font-weight: 300;
+    letter-spacing: -0.055em;
+    line-height: 0.92;
     color: var(--black);
 }
 
-.metric-value .orange-number {
+.orange-number {
     color: var(--orange);
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif !important;
-    font-weight: 500;
+    font-weight: 300;
 }
 
 .metric-note {
-    font-size: 0.88rem;
-    color: var(--black);
-    line-height: 1.45;
-    margin-top: 1.05rem;
-    font-weight: 600;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    margin-top: 1rem;
+    font-weight: 400;
 }
 
 .section-panel {
-    border: 2px solid var(--black);
+    border: 1.6px solid var(--black);
     background: var(--white);
     padding: 2rem;
-    margin: 1.3rem 0;
+    margin: 1.2rem 0;
 }
 
 .section-title {
-    font-family: "Playfair Display", Georgia, serif !important;
-    font-size: clamp(2.2rem, 5vw, 4rem);
-    line-height: 0.98;
-    letter-spacing: -0.045em;
-    font-weight: 600;
-    margin-bottom: 1rem;
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: clamp(2.4rem, 5vw, 4.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.06em;
+    font-weight: 400;
+    margin: 1.8rem 0 0.8rem 0;
 }
 
-.black-panel {
-    background: var(--black);
-    color: var(--white);
-    border: 2px solid var(--black);
-    border-top: 8px solid var(--orange);
-    padding: 2rem;
+.editorial-note {
+    border-left: 8px solid var(--orange);
+    border-top: 1.6px solid var(--black);
+    border-bottom: 1.6px solid var(--black);
+    border-right: 1.6px solid var(--black);
+    padding: 1.5rem;
     margin: 1rem 0;
+    background: var(--white);
 }
 
-.black-panel h3, .black-panel p, .black-panel div {
-    color: var(--white) !important;
-}
-
-.black-panel h3 {
-    font-family: "Playfair Display", Georgia, serif !important;
-    font-size: 2.25rem;
-    line-height: 1;
-    letter-spacing: -0.04em;
-    font-weight: 600;
+.editorial-note h3 {
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 2.8rem;
+    line-height: 0.95;
     margin: 0 0 1rem 0;
+    font-weight: 400 !important;
 }
 
-.node-map {
+.process-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 0.85rem;
-    margin-top: 1.5rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.3rem;
 }
 
-.node {
-    min-height: 96px;
-    border: 2px solid var(--orange);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: var(--black);
-    font-weight: 800;
-    font-size: 0.68rem;
-    line-height: 1.15;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    box-shadow: inset 0 0 0 9px var(--white), inset 0 0 0 11px var(--orange);
+.process-step {
+    border: 1.6px solid var(--black);
+    border-top: 7px solid var(--orange);
     padding: 1rem;
+    min-height: 118px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.35;
+    background: var(--white);
 }
 
 .custom-bar-row {
     display: grid;
-    grid-template-columns: 160px 1fr 60px;
+    grid-template-columns: 150px 1fr 58px;
     gap: 1rem;
     align-items: center;
-    margin: 0.9rem 0;
-    font-weight: 700;
+    margin: 1rem 0;
+    font-weight: 500;
 }
 
 .custom-bar-track {
-    height: 18px;
-    border: 2px solid var(--black);
+    height: 15px;
+    border: 1.6px solid var(--black);
     background: var(--white);
 }
 
@@ -359,33 +343,63 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     background: var(--orange);
 }
 
+.decision-card {
+    border: 1.6px solid var(--black);
+    padding: 1.35rem;
+    margin: 0.85rem 0;
+    background: var(--white);
+}
+
+.decision-title {
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.small-caps {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
 .footer-brand {
     text-align: center;
     border-top: 3px solid var(--orange);
     border-bottom: 3px solid var(--orange);
-    padding: 2.5rem 1rem;
+    padding: 2.4rem 1rem;
     margin-top: 3rem;
 }
 
-.footer-logo {
-    width: 100%;
-    max-width: 760px;
+.footer-logo-wrap img {
+    width: min(760px, 100%);
     display: block;
     margin: 0 auto 1rem auto;
 }
 
+.footer-signature {
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-size: 3.7rem;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 0.7rem 0 0.4rem 0;
+}
+
 .icon-link {
     display: inline-block;
-    color: var(--black) !important;
-    background: var(--white);
-    border: 2px solid var(--black);
-    padding: 0.65rem 0.95rem;
+    border: 1.6px solid var(--black);
+    padding: 0.65rem 1rem;
     margin: 0.3rem;
     text-decoration: none !important;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
+    color: var(--black) !important;
 }
 
 .icon-link:hover {
@@ -393,13 +407,12 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 }
 
 [data-testid="stDataFrame"] {
-    border: 2px solid var(--black);
+    border: 1.6px solid var(--black);
 }
 
 [data-testid="stMetricValue"] {
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif !important;
-    color: var(--black) !important;
-    font-weight: 500 !important;
+    font-family: "Cormorant Garamond", Georgia, serif !important;
+    font-weight: 300 !important;
 }
 
 [data-testid="stMainMenu"], footer {
@@ -408,47 +421,50 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 
 @media (max-width: 980px) {
     .block-container {
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-left: 0.9rem !important;
+        padding-right: 0.9rem !important;
     }
-    .hero {
-        grid-template-columns: 1fr;
-    }
-    .brand-shell {
+    .hero-shell {
         padding: 1.2rem;
     }
-    .metric-grid {
+    .hero-grid, .metric-grid, .process-grid {
         grid-template-columns: 1fr;
     }
-    .node-map {
-        grid-template-columns: repeat(2, 1fr);
+    .hero-title {
+        font-size: 4.3rem;
     }
-    .node {
-        border-radius: 0;
+    .custom-bar-row {
+        grid-template-columns: 110px 1fr 42px;
     }
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 @st.cache_data
 def build_records():
-    data = [
-        ["REV-0001", "Commercial", "Patient Access", "Orthopedics", "Eligibility mismatch", 9, 12600, "High", "Missing subscriber relation", "Escalate eligibility verification"],
-        ["REV-0002", "Medicare Advantage", "Authorization Control", "Cardiology", "Aging authorization", 6, 28750, "High", "Pending packet", "Request packet review"],
-        ["REV-0003", "Medicaid", "Documentation Readiness", "Rehabilitation", "Incomplete plan of care", 4, 9300, "Moderate", "Therapy notes incomplete", "Validate documentation readiness"],
-        ["REV-0004", "Commercial", "Routing Intelligence", "Imaging", "Wrong portal route", 8, 14500, "High", "Benefit manager carve out", "Confirm routing owner"],
-        ["REV-0005", "Marketplace", "Eligibility Verification", "Primary Care", "Coverage inactive", 3, 4200, "Moderate", "Coverage termination risk", "Recheck eligibility"],
-        ["REV-0006", "Self Pay", "Financial Clearance", "Surgery", "Estimate not completed", 2, 6800, "Low", "Estimate missing", "Create estimate review"],
-        ["REV-0007", "Commercial", "Denial Prevention", "Oncology", "Policy criteria exposure", 7, 33100, "High", "Criteria unclear", "Route to human review"],
-        ["REV-0008", "Medicare Advantage", "Authorization Control", "Neurology", "SLA risk", 5, 18500, "Moderate", "Pending five days", "Escalate payer follow up"],
-        ["REV-0009", "Medicaid", "Documentation Readiness", "Behavioral Health", "Missing referral", 6, 7600, "Moderate", "Referral not attached", "Attach referral evidence"],
-        ["REV-0010", "Commercial", "Eligibility Verification", "Cardiology", "COB conflict", 8, 22100, "High", "Benefits unresolved", "Validate primary payer"],
-        ["REV-0011", "Marketplace", "Routing Intelligence", "Imaging", "Payer policy mismatch", 7, 11900, "High", "Delegated review required", "Check benefit manager"],
-        ["REV-0012", "Medicare Advantage", "Denial Prevention", "Rehabilitation", "Appeal exposure", 5, 15200, "Moderate", "Denial reason pattern detected", "Prepare prevention brief"],
+    rows = [
+        ["REV-0001", "Commercial", "Patient Access", "Orthopedics", "Eligibility mismatch", 9, 12600, "High", "Subscriber relationship missing", "Eligibility correction", "Owner needed", "Registration desk"],
+        ["REV-0002", "Medicare Advantage", "Authorization Control", "Cardiology", "Aging authorization", 6, 28750, "High", "Packet pending payer review", "Escalation", "Follow up due", "Authorization team"],
+        ["REV-0003", "Medicaid", "Documentation Readiness", "Rehabilitation", "Incomplete plan of care", 4, 9300, "Moderate", "Therapy notes incomplete", "Documentation request", "Missing evidence", "Clinical documentation"],
+        ["REV-0004", "Commercial", "Routing Intelligence", "Imaging", "Wrong portal route", 8, 14500, "High", "Benefit manager carve out", "Routing correction", "Portal mismatch", "Patient access lead"],
+        ["REV-0005", "Marketplace", "Eligibility Verification", "Primary Care", "Coverage inactive", 3, 4200, "Moderate", "Coverage termination risk", "Recheck eligibility", "Coverage pending", "Eligibility desk"],
+        ["REV-0006", "Self Pay", "Financial Clearance", "Surgery", "Estimate not completed", 2, 6800, "Low", "Patient estimate missing", "Financial counseling", "Estimate gap", "Financial clearance"],
+        ["REV-0007", "Commercial", "Denial Prevention", "Oncology", "Policy criteria exposure", 7, 33100, "High", "Criteria unclear", "Human review", "Medical policy review", "Denial prevention"],
+        ["REV-0008", "Medicare Advantage", "Authorization Control", "Neurology", "SLA pressure", 5, 18500, "Moderate", "Pending five days", "Escalate payer follow up", "Aging threshold", "Authorization team"],
+        ["REV-0009", "Medicaid", "Documentation Readiness", "Behavioral Health", "Missing referral", 6, 7600, "Moderate", "Referral not attached", "Attach referral evidence", "Referral gap", "Intake support"],
+        ["REV-0010", "Commercial", "Eligibility Verification", "Cardiology", "COB conflict", 8, 22100, "High", "Benefits unresolved", "Validate primary payer", "Coordination issue", "Eligibility desk"],
+        ["REV-0011", "Marketplace", "Routing Intelligence", "Imaging", "Payer policy mismatch", 7, 11900, "High", "Delegated review required", "Check benefit manager", "Routing ambiguity", "Patient access lead"],
+        ["REV-0012", "Medicare Advantage", "Denial Prevention", "Rehabilitation", "Appeal exposure", 5, 15200, "Moderate", "Denial reason pattern detected", "Prepare prevention brief", "Pattern forming", "Denial prevention"],
+        ["REV-0013", "Commercial", "Patient Access", "Surgery", "Authorization not attached", 1, 9800, "Low", "Attachment missing from account", "Queue verification", "Pre bill risk", "Access coordinator"],
+        ["REV-0014", "Medicare Advantage", "Documentation Readiness", "Orthopedics", "Medical necessity evidence gap", 10, 37600, "High", "Conservative therapy evidence missing", "Clinical packet rebuild", "Evidence gap", "Clinical documentation"],
     ]
-    columns = ["Case ID", "Payer Group", "Workflow Domain", "Service Line", "Signal", "Aging Days", "Synthetic Exposure", "Risk Level", "Root Cause", "Recommended Action"]
-    return pd.DataFrame(data, columns=columns)
+    columns = [
+        "Case ID", "Payer Group", "Workflow Domain", "Service Line", "Signal", "Aging Days", "Synthetic Exposure", "Risk Level", "Root Cause", "Recommended Action", "Control Gap", "Review Owner"
+    ]
+    return pd.DataFrame(rows, columns=columns)
 
 
 records = build_records()
@@ -457,79 +473,84 @@ st.sidebar.markdown("### Command Filters")
 risk_filter = st.sidebar.multiselect("Filter by risk level", sorted(records["Risk Level"].unique()), default=sorted(records["Risk Level"].unique()))
 payer_filter = st.sidebar.multiselect("Filter by payer group", sorted(records["Payer Group"].unique()), default=sorted(records["Payer Group"].unique()))
 domain_filter = st.sidebar.multiselect("Filter by workflow area", sorted(records["Workflow Domain"].unique()), default=sorted(records["Workflow Domain"].unique()))
+service_filter = st.sidebar.multiselect("Filter by service line", sorted(records["Service Line"].unique()), default=sorted(records["Service Line"].unique()))
+aging_threshold = st.sidebar.slider("SLA aging threshold", min_value=2, max_value=10, value=5, step=1)
 
 filtered = records[
     records["Risk Level"].isin(risk_filter)
     & records["Payer Group"].isin(payer_filter)
     & records["Workflow Domain"].isin(domain_filter)
+    & records["Service Line"].isin(service_filter)
 ]
 
 high_count = int((filtered["Risk Level"] == "High").sum())
-sla_count = int((filtered["Aging Days"] >= 5).sum())
+sla_count = int((filtered["Aging Days"] >= aging_threshold).sum())
 exposure = int(filtered["Synthetic Exposure"].sum()) if not filtered.empty else 0
 avg_age = round(float(filtered["Aging Days"].mean()), 1) if not filtered.empty else 0
+owner_count = int(filtered["Review Owner"].nunique()) if not filtered.empty else 0
 
-logo_img = f'<img class="brand-logo" src="data:image/png;base64,{logo_b64}" alt="Kori Pickle Healthcare Operations Intelligence Logo" />' if logo_b64 else ""
-footer_logo = f'<img class="footer-logo" src="data:image/png;base64,{logo_b64}" alt="Kori Pickle Healthcare Operations Intelligence Logo" />' if logo_b64 else ""
+if logo_bytes:
+    st.image(BytesIO(logo_bytes), use_container_width=True)
 
-st.markdown(f"""
-<div class="brand-shell">
-    {logo_img}
-    <div class="hero">
-        <div class="hero-left">
+st.markdown(
+    f"""
+<div class="hero-shell">
+    <div class="brand-rule"></div>
+    <div class="hero-grid">
+        <div>
             <div class="kicker">Kori Pickle • Healthcare Operations Intelligence</div>
             <div class="hero-title">Enterprise Revenue <span class="orange-word">Operations</span> Platform</div>
-            <p class="hero-copy">A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, documentation readiness, denial prevention, payer friction analysis, and responsible operational intelligence.</p>
-            <p class="hero-copy">This working portfolio system is built around operational review signals, human oversight, and workflow stabilization logic.</p>
-            <div class="badge-row">
+            <p class="hero-copy">A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, routing intelligence, documentation readiness, denial prevention, payer friction analysis, and leadership reporting.</p>
+            <p class="hero-copy">This build is not another static dashboard. It functions as an operational review workbench: filter synthetic cases, isolate ownership gaps, simulate stabilization impact, generate escalation language, and build a leadership brief from the active command view.</p>
+            <div>
                 <span class="badge">No PHI</span>
                 <span class="badge">Synthetic Data</span>
                 <span class="badge">Human Review Required</span>
                 <span class="badge">Built by Kori Pickle</span>
             </div>
         </div>
-        <div class="identity-card">
-            <div class="kicker">Operational Identity</div>
-            <div class="identity-title">Workflow visibility before revenue damage.</div>
-            <p>Designed around one question: where did the workflow first lose control?</p>
+        <div class="identity-panel">
+            <div>
+                <div class="kicker">Operational Identity</div>
+                <div class="identity-statement">Workflow visibility before revenue damage.</div>
+                <div class="signature-line"></div>
+                <p>Designed around one question: where did the workflow first lose control?</p>
+            </div>
+            <p class="small-caps">Patient access • authorization control • documentation readiness • denial prevention</p>
         </div>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-st.markdown(f"""
+st.markdown(
+    f"""
 <div class="metric-grid">
-    <div class="metric-card">
-        <div class="metric-label">High Risk Records</div>
-        <div class="metric-value"><span class="orange-number">{high_count}</span></div>
-        <div class="metric-note">Filtered operational review queue.</div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-label">SLA Risk Signals</div>
-        <div class="metric-value"><span class="orange-number">{sla_count}</span></div>
-        <div class="metric-note">Records aging at or above five days.</div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-label">Synthetic Exposure</div>
-        <div class="metric-value"><span class="orange-number">${exposure:,.0f}</span></div>
-        <div class="metric-note">Portfolio simulation only.</div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-label">Academic Standing</div>
-        <div class="metric-value"><span class="orange-number">99</span> / 120</div>
-        <div class="metric-note">BSHA candidate • GPA 3.6.</div>
-    </div>
+    <div class="metric-card"><div class="metric-label">High Risk Records</div><div class="metric-value"><span class="orange-number">{high_count}</span></div><div class="metric-note">Prioritized operational review queue.</div></div>
+    <div class="metric-card"><div class="metric-label">SLA Pressure</div><div class="metric-value"><span class="orange-number">{sla_count}</span></div><div class="metric-note">Records aged at or above {aging_threshold} days.</div></div>
+    <div class="metric-card"><div class="metric-label">Synthetic Exposure</div><div class="metric-value"><span class="orange-number">${exposure:,.0f}</span></div><div class="metric-note">Portfolio simulation only.</div></div>
+    <div class="metric-card"><div class="metric-label">Ownership Spread</div><div class="metric-value"><span class="orange-number">{owner_count}</span></div><div class="metric-note">Distinct teams in the active review view.</div></div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-tab_a, tab_b, tab_c, tab_d, tab_e = st.tabs(["Command Center", "Control Grid", "Friction Map", "Brief Builder", "Governance"])
+tab_a, tab_b, tab_c, tab_d, tab_e, tab_f = st.tabs([
+    "Command Center",
+    "Ownership Grid",
+    "Stabilization Lab",
+    "Handoff Builder",
+    "Leadership Brief",
+    "Governance",
+])
 
 with tab_a:
     st.markdown('<div class="section-title">Live Command Center</div>', unsafe_allow_html=True)
-    st.write("Use the sidebar filters to isolate operational pressure across payer group, workflow domain, and risk level.")
+    st.write("Use the sidebar filters to isolate operational pressure across payer group, workflow domain, service line, and risk level.")
     st.dataframe(filtered, hide_index=True, use_container_width=True)
 
-    summary = filtered.groupby("Risk Level")["Case ID"].count().reset_index(name="Records")
+    summary = filtered.groupby("Risk Level")["Case ID"].count().reset_index(name="Records") if not filtered.empty else pd.DataFrame(columns=["Risk Level", "Records"])
     max_records = int(summary["Records"].max()) if not summary.empty else 1
     bars = ""
     for _, row in summary.iterrows():
@@ -540,73 +561,109 @@ with tab_a:
     with left:
         st.markdown(f'<div class="section-panel"><div class="kicker">Risk Queue Distribution</div>{bars}</div>', unsafe_allow_html=True)
     with right:
-        st.markdown(f'<div class="black-panel"><h3>Executive Interpretation</h3><p>The filtered view shows {len(filtered)} synthetic records, {high_count} high risk records, {sla_count} SLA pressure signals, average aging of {avg_age} days, and ${exposure:,.0f} in simulated exposure. These are prioritization signals for human review, not automated decisions.</p></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="editorial-note"><h3>Executive Interpretation</h3><p>The active view shows {len(filtered)} synthetic records, {high_count} high risk records, {sla_count} SLA pressure signals, average aging of {avg_age} days, and ${exposure:,.0f} in simulated exposure. These are prioritization signals for human review, not automated payer or clinical decisions.</p></div>',
+            unsafe_allow_html=True,
+        )
 
 with tab_b:
-    st.markdown('<div class="section-title">Revenue Operations Control Grid</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-panel"><div class="kicker">Workflow Intelligence Chain</div><div class="node-map"><div class="node">Patient Access Intake</div><div class="node">Eligibility Control</div><div class="node">Routing Intelligence</div><div class="node">Authorization Aging</div><div class="node">Documentation Readiness</div><div class="node">Denial Prevention</div></div></div>', unsafe_allow_html=True)
-    domain_summary = filtered.groupby("Workflow Domain").agg(Records=("Case ID", "count"), Exposure=("Synthetic Exposure", "sum"), Average_Aging=("Aging Days", "mean")).reset_index()
-    domain_summary["Average_Aging"] = domain_summary["Average_Aging"].round(1)
-    st.dataframe(domain_summary, hide_index=True, use_container_width=True)
-
-    st.markdown('<div class="section-panel"><div class="kicker">Stabilization Simulator</div>', unsafe_allow_html=True)
-    volume = st.number_input("Monthly front end record volume", min_value=0, value=15000, step=500)
-    friction = st.slider("Estimated workflow friction rate", min_value=0.01, max_value=0.25, value=0.08, step=0.01)
-    capture = st.slider("Estimated stabilization capture rate", min_value=0.25, max_value=0.95, value=0.85, step=0.05)
-    flagged = volume * friction
-    stabilized = flagged * capture
-    s1, s2, s3 = st.columns(3)
-    s1.metric("Projected Records Flagged", f"{int(flagged):,}")
-    s2.metric("Projected Records Stabilized", f"{int(stabilized):,}")
-    s3.metric("Residual Review Queue", f"{int(flagged - stabilized):,}")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Ownership Grid</div>', unsafe_allow_html=True)
+    st.write("This view separates the operational failure point from the team responsible for stabilizing it.")
+    st.markdown(
+        '<div class="section-panel"><div class="kicker">Workflow Control Chain</div><div class="process-grid"><div class="process-step">Intake Signal</div><div class="process-step">Eligibility Control</div><div class="process-step">Routing Validation</div><div class="process-step">Authorization Aging</div><div class="process-step">Documentation Readiness</div><div class="process-step">Denial Prevention</div></div></div>',
+        unsafe_allow_html=True,
+    )
+    owner_summary = filtered.groupby(["Review Owner", "Workflow Domain"]).agg(
+        Records=("Case ID", "count"),
+        Exposure=("Synthetic Exposure", "sum"),
+        Average_Aging=("Aging Days", "mean"),
+    ).reset_index() if not filtered.empty else pd.DataFrame(columns=["Review Owner", "Workflow Domain", "Records", "Exposure", "Average_Aging"])
+    if not owner_summary.empty:
+        owner_summary["Average_Aging"] = owner_summary["Average_Aging"].round(1)
+    st.dataframe(owner_summary.sort_values("Exposure", ascending=False) if not owner_summary.empty else owner_summary, hide_index=True, use_container_width=True)
 
 with tab_c:
-    st.markdown('<div class="section-title">Payer Friction Map</div>', unsafe_allow_html=True)
-    payer_summary = filtered.groupby("Payer Group").agg(Records=("Case ID", "count"), Exposure=("Synthetic Exposure", "sum"), Average_Aging=("Aging Days", "mean"), High_Risk=("Risk Level", lambda s: int((s == "High").sum()))).reset_index()
-    payer_summary["Average_Aging"] = payer_summary["Average_Aging"].round(1)
-    payer_summary["Friction Score"] = (payer_summary["Records"] * 8 + payer_summary["High_Risk"] * 25 + payer_summary["Average_Aging"] * 6).round(0).astype(int)
-    st.dataframe(payer_summary.sort_values("Friction Score", ascending=False), hide_index=True, use_container_width=True)
-    max_score = int(payer_summary["Friction Score"].max()) if not payer_summary.empty else 1
-    payer_bars = ""
-    for _, row in payer_summary.sort_values("Friction Score", ascending=False).iterrows():
-        width = int((row["Friction Score"] / max_score) * 100) if max_score else 0
-        payer_bars += f'<div class="custom-bar-row"><div>{row["Payer Group"]}</div><div class="custom-bar-track"><div class="custom-bar-fill" style="width:{width}%;"></div></div><div>{row["Friction Score"]}</div></div>'
-    st.markdown(f'<div class="section-panel"><div class="kicker">Payer Pressure Index</div>{payer_bars}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Stabilization Lab</div>', unsafe_allow_html=True)
+    st.write("Model how stronger front end controls may reduce avoidable review burden before the claim or authorization becomes downstream rework.")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        monthly_volume = st.number_input("Monthly front end record volume", min_value=0, value=18000, step=500)
+    with col2:
+        friction_rate = st.slider("Estimated workflow friction rate", min_value=0.01, max_value=0.25, value=0.08, step=0.01)
+    with col3:
+        capture_rate = st.slider("Stabilization capture rate", min_value=0.25, max_value=0.95, value=0.80, step=0.05)
+    flagged = monthly_volume * friction_rate
+    stabilized = flagged * capture_rate
+    residual = flagged - stabilized
+    st.markdown(
+        f"""
+<div class="metric-grid">
+    <div class="metric-card"><div class="metric-label">Projected Flagged Records</div><div class="metric-value"><span class="orange-number">{int(flagged):,}</span></div><div class="metric-note">Records likely to need operational review.</div></div>
+    <div class="metric-card"><div class="metric-label">Projected Stabilized</div><div class="metric-value"><span class="orange-number">{int(stabilized):,}</span></div><div class="metric-note">Records potentially stabilized before downstream escalation.</div></div>
+    <div class="metric-card"><div class="metric-label">Residual Queue</div><div class="metric-value"><span class="orange-number">{int(residual):,}</span></div><div class="metric-note">Records still requiring manual follow up.</div></div>
+    <div class="metric-card"><div class="metric-label">Control Lift</div><div class="metric-value"><span class="orange-number">{int(capture_rate * 100)}%</span></div><div class="metric-note">Synthetic operating assumption.</div></div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 with tab_d:
-    st.markdown('<div class="section-title">Leadership Brief Builder</div>', unsafe_allow_html=True)
-    brief_type = st.selectbox("Brief type", ["Executive readout", "Daily huddle script", "Denial prevention action plan"])
-    if brief_type == "Executive readout":
-        brief = f"Enterprise Revenue Operations Brief\n\nCurrent synthetic command center view shows {len(filtered)} records, {high_count} high risk records, {sla_count} SLA pressure signals, average aging of {avg_age} days, and ${exposure:,.0f} in simulated exposure.\n\nPrimary concern:\nWorkflow pressure is forming before downstream denial activity.\n\nRecommended actions:\n1. Prioritize high risk records for human review.\n2. Validate payer routing before submission.\n3. Confirm documentation readiness before follow up.\n4. Track aged requests by payer and service line.\n\nCreated by Kori Pickle"
-    elif brief_type == "Daily huddle script":
-        brief = f"Daily Huddle Script\n\nToday we are reviewing {len(filtered)} synthetic workflow records.\n\nFocus areas:\nHigh risk queue: {high_count}\nSLA pressure queue: {sla_count}\nSimulated exposure: ${exposure:,.0f}\n\nCreated by Kori Pickle"
-    else:
-        brief = "Denial Prevention Action Plan\n\nObjective:\nUse early workflow visibility to identify operational risk before downstream denial activity develops.\n\nPriorities:\n1. Eligibility mismatch review\n2. Authorization aging review\n3. Documentation readiness review\n4. Payer routing validation\n5. Follow up escalation\n\nCreated by Kori Pickle"
-    st.text_area("Generated leadership output", brief, height=390)
-    st.download_button("Download brief", data=brief, file_name="kori_pickle_revenue_operations_brief.txt", mime="text/plain")
+    st.markdown('<div class="section-title">Handoff Builder</div>', unsafe_allow_html=True)
+    selected_case = st.selectbox("Select synthetic record", filtered["Case ID"].tolist() if not filtered.empty else records["Case ID"].tolist())
+    case = records[records["Case ID"] == selected_case].iloc[0]
+    handoff = f"""Operational Handoff\n\nCase: {case['Case ID']}\nPayer Group: {case['Payer Group']}\nWorkflow Domain: {case['Workflow Domain']}\nService Line: {case['Service Line']}\nRisk Level: {case['Risk Level']}\nAging Days: {case['Aging Days']}\nSynthetic Exposure: ${case['Synthetic Exposure']:,.0f}\n\nPrimary Signal:\n{case['Signal']}\n\nRoot Cause:\n{case['Root Cause']}\n\nControl Gap:\n{case['Control Gap']}\n\nRecommended Action:\n{case['Recommended Action']}\n\nAssigned Review Owner:\n{case['Review Owner']}\n\nHuman Review Boundary:\nThis is a synthetic portfolio artifact. It supports operational review thinking only and does not make payer, billing, coding, clinical, or patient specific decisions.\n\nCreated by Kori Pickle"""
+    st.text_area("Generated handoff", handoff, height=390)
+    st.download_button("Download handoff", data=handoff, file_name=f"{selected_case.lower()}_handoff.txt", mime="text/plain")
 
 with tab_e:
-    st.markdown('<div class="section-title">Responsible Data Governance</div>', unsafe_allow_html=True)
-    st.markdown('<div class="black-panel"><h3>Synthetic Portfolio Standard</h3><p>This public platform uses synthetic data only. It is built for healthcare operations learning, portfolio demonstration, workflow intelligence, and responsible technology positioning.</p></div>', unsafe_allow_html=True)
-    boundary = pd.DataFrame([
-        ["Synthetic case identifiers", "Allowed"],
-        ["Fake payer groups", "Allowed"],
-        ["Simulated authorization aging", "Allowed"],
-        ["Simulated documentation gaps", "Allowed"],
-        ["Simulated exposure values", "Allowed"],
-        ["Protected health information", "Not used"],
-        ["Patient specific records", "Not used"],
-        ["EHR screenshots", "Not used"],
-    ], columns=["Data Element", "Portfolio Status"])
-    st.dataframe(boundary, hide_index=True, use_container_width=True)
+    st.markdown('<div class="section-title">Leadership Brief</div>', unsafe_allow_html=True)
+    brief_mode = st.selectbox("Brief output", ["Executive readout", "Daily huddle", "Payer friction memo", "Denial prevention note"])
+    top_domain = filtered.groupby("Workflow Domain")["Case ID"].count().sort_values(ascending=False).index[0] if not filtered.empty else "No active domain"
+    top_payer = filtered.groupby("Payer Group")["Case ID"].count().sort_values(ascending=False).index[0] if not filtered.empty else "No active payer"
+    if brief_mode == "Executive readout":
+        brief = f"""Enterprise Revenue Operations Brief\n\nActive command view:\n{len(filtered)} synthetic records\n{high_count} high risk records\n{sla_count} SLA pressure signals\nAverage aging: {avg_age} days\nSimulated exposure: ${exposure:,.0f}\n\nPrimary pressure domain:\n{top_domain}\n\nPrimary payer pressure group:\n{top_payer}\n\nOperational interpretation:\nWorkflow pressure is forming before downstream denial activity. Leadership should prioritize ownership clarity, documentation readiness, payer routing accuracy, and aged authorization follow up.\n\nCreated by Kori Pickle"""
+    elif brief_mode == "Daily huddle":
+        brief = f"""Daily Operations Huddle\n\nToday the team should review {len(filtered)} synthetic workflow records.\n\nFocus queue:\nHigh risk records: {high_count}\nSLA pressure records: {sla_count}\nAverage aging: {avg_age} days\n\nHuddle questions:\nWho owns each aged item?\nWhat documentation is missing?\nHas routing been validated?\nWhich payer follow ups need escalation today?\n\nCreated by Kori Pickle"""
+    elif brief_mode == "Payer friction memo":
+        brief = f"""Payer Friction Memo\n\nCurrent payer group requiring the most attention:\n{top_payer}\n\nOperational concern:\nPayer friction may be driven by routing ambiguity, unclear documentation readiness, aged authorization follow up, or unresolved eligibility conflicts.\n\nRecommended review:\nValidate payer owner, benefit manager pathway, portal route, authorization status, and documentation packet completeness before downstream denial risk increases.\n\nCreated by Kori Pickle"""
+    else:
+        brief = f"""Denial Prevention Note\n\nCurrent review population:\n{len(filtered)} synthetic records\n\nPrimary prevention target:\n{top_domain}\n\nAction logic:\nUse early operational visibility to identify records that may become avoidable denials if eligibility, routing, authorization aging, and documentation readiness are not stabilized before submission or final follow up.\n\nCreated by Kori Pickle"""
+    st.text_area("Generated leadership brief", brief, height=390)
+    st.download_button("Download leadership brief", data=brief, file_name="kori_pickle_leadership_brief.txt", mime="text/plain")
 
-st.markdown(f"""
-<div class="footer-brand">
-    {footer_logo}
-    <div class="kicker">Created by Kori Pickle</div>
-    <p style="color:rgb(0,0,0); font-weight:700;">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p>
-    <a class="icon-link" href="https://www.linkedin.com/in/kori-pickle" target="_blank">LinkedIn</a>
-    <a class="icon-link" href="https://github.com/koripickle1101-TN" target="_blank">GitHub</a>
+with tab_f:
+    st.markdown('<div class="section-title">Responsible Use Governance</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="editorial-note"><h3>Synthetic Data Standard</h3><p>This public platform uses synthetic records only. It is designed for healthcare operations learning, portfolio demonstration, workflow intelligence, and responsible technology positioning. It does not use PHI and does not make payer, billing, coding, clinical, or patient specific decisions.</p></div>',
+        unsafe_allow_html=True,
+    )
+    governance = pd.DataFrame(
+        [
+            ["Synthetic case identifiers", "Allowed"],
+            ["Fake payer groups", "Allowed"],
+            ["Simulated aging days", "Allowed"],
+            ["Simulated documentation gaps", "Allowed"],
+            ["Simulated exposure values", "Allowed"],
+            ["Protected health information", "Not used"],
+            ["Patient specific records", "Not used"],
+            ["Clinical decision automation", "Not performed"],
+            ["Payer decision automation", "Not performed"],
+        ],
+        columns=["Data Element", "Portfolio Status"],
+    )
+    st.dataframe(governance, hide_index=True, use_container_width=True)
+
+st.markdown('<div class="footer-brand">', unsafe_allow_html=True)
+if logo_bytes:
+    st.image(BytesIO(logo_bytes), use_container_width=True)
+st.markdown(
+    """
+<div class="kicker">Created by Kori Pickle</div>
+<div class="footer-signature">Kori Pickle</div>
+<p style="font-weight:400; line-height:1.7;">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p>
+<a class="icon-link" href="https://www.linkedin.com/in/kori-pickle" target="_blank">LinkedIn</a>
+<a class="icon-link" href="https://github.com/koripickle1101-TN" target="_blank">GitHub</a>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)

@@ -56,6 +56,9 @@ def wlcm_scores(case):
     if case.get("domain") == "Routing Intelligence": scores["Routing Control"] -= 18
     scores["Follow-Up Control"] -= max(0, int(case.get("days", 0)) - int(case.get("sla", 5))) * 10
     return {key: max(0, min(100, round(value, 1))) for key, value in scores.items()}
+def workflow_loss_score(case):
+    scores = wlcm_scores(case)
+    return round(sum(scores.values()) / len(scores), 1) if scores else 0
 def first_failed_domain(case):
     scores = wlcm_scores(case); return min(scores, key=scores.get)
 def stability_status(case):
@@ -76,6 +79,13 @@ def sla_status(case):
     if remaining == 0: return remaining, "Due Today", "Complete review today"
     if remaining <= 2: return remaining, "Breach Risk", "Assign owner and follow-up window"
     return remaining, "Within Window", "Monitor"
+def next_priority(case):
+    remaining, sla_label, _ = sla_status(case)
+    status = stability_status(case)
+    if status == "Escalation Required" or sla_label == "Breached": return "Same-day escalation"
+    if status == "Control Loss" or sla_label in ["Due Today", "Breach Risk"]: return "Priority review"
+    if missing_docs(case): return "Documentation follow-up"
+    return "Monitor"
 def parse_csv(uploaded):
     if uploaded is None: return DEFAULT_DATA, "Default synthetic data active."
     try:
@@ -129,6 +139,12 @@ Workflow Loss Control Method asks: Where did the workflow first lose control?
 def render_html(markup): st.html(str(markup).strip())
 def chip(text): return f'<span class="chip">{esc(text)}</span>'
 def metric_card(label, value, note): return f'<div class="metric-card"><div class="eyebrow">{esc(label)}</div><div class="metric-number">{esc(value)}</div><div class="metric-note">{esc(note)}</div></div>'
+def summary_cell(label, value, note=""):
+    return f'<div class="summary-cell"><div class="summary-label">{esc(label)}</div><div class="summary-value">{esc(value)}</div><div class="summary-note">{esc(note)}</div></div>'
+def method_score_summary(case):
+    _, auth_score, auth_status = auth_readiness(case)
+    _, sla_label, _ = sla_status(case)
+    return '<div class="method-summary"><div class="eyebrow">Method Score Summary</div><div class="summary-grid">' + summary_cell("Workflow Loss Control Score", f"{workflow_loss_score(case)}", first_failed_domain(case)) + summary_cell("Authorization Readiness", f"{auth_score}%", auth_status) + summary_cell("SLA Status", sla_label, f"{case.get('days')} of {case.get('sla')} days") + summary_cell("Documentation Gap Count", len(missing_docs(case)), "Missing items detected") + summary_cell("Recommended Owner", case.get("owner", "Unassigned"), case.get("domain", "")) + summary_cell("Next Action Priority", next_priority(case), stability_status(case)) + '</div></div>'
 def case_card(case):
     miss_text = ", ".join(missing_docs(case)) if missing_docs(case) else "None detected"
     return f'<div class="case-card"><div class="case-title">{esc(case["id"])}</div><div class="case-meta">{esc(case["risk"])} • {esc(case["payer"])} • {esc(case["domain"])} • {esc(case["line"])}</div><div class="case-row"><strong>Owner:</strong> {esc(case["owner"])}</div><div class="case-row"><strong>Missing:</strong> {esc(miss_text)}</div><div class="case-row"><strong>Control Status:</strong> {esc(stability_status(case))}</div><div class="case-row"><strong>Next:</strong> {esc(case["action"])}</div></div>'
@@ -173,6 +189,12 @@ h1,h2,h3{{font-family:'Cormorant Garamond',Georgia,serif!important;font-weight:3
 .metric-card{{border:1.5px solid var(--black);border-left:15px solid var(--orange);padding:1.8rem 1.35rem;min-height:220px;height:220px;background:var(--white);overflow:hidden;display:flex;flex-direction:column;justify-content:center;}}
 .metric-number{{font-family:'Inter',sans-serif;color:var(--orange);font-weight:300;letter-spacing:-.045em;font-variant-numeric:tabular-nums;font-size:clamp(3.1rem,5.8vw,4.8rem);line-height:.95;margin:.45rem 0 .9rem;white-space:nowrap;}}
 .metric-note{{font-size:1rem;line-height:1.42;font-weight:300;}}
+.method-summary{{border:1.5px solid var(--black);border-top:10px solid var(--orange);background:var(--white);padding:1.75rem;margin:2rem 0 2.5rem;overflow:hidden;}}
+.summary-grid{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem;align-items:stretch;}}
+.summary-cell{{border:1.5px solid var(--black);border-left:12px solid var(--orange);background:var(--white);padding:1rem;min-height:132px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;}}
+.summary-label{{font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;font-weight:700;line-height:1.45;margin-bottom:.55rem;}}
+.summary-value{{font-size:1.45rem;line-height:1.05;font-weight:400;color:var(--orange);font-variant-numeric:tabular-nums;}}
+.summary-note{{font-size:.84rem;line-height:1.35;font-weight:300;margin-top:.55rem;}}
 .module-title{{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(3.8rem,8vw,7rem);line-height:.9;letter-spacing:-.065em;font-weight:300;margin:3rem 0 1.6rem;}}
 .case-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:2rem 0;align-items:stretch;}}
 .case-card{{border:1.5px solid var(--black);border-left:14px solid var(--orange);padding:1.55rem;min-height:310px;height:310px;background:var(--white);overflow:hidden;}}
@@ -203,7 +225,7 @@ pre,code{{background:var(--white)!important;color:var(--black)!important;border:
 .stFileUploader section *{{color:var(--black)!important;background:transparent!important;}}
 .stFileUploader button{{background:var(--white)!important;color:var(--black)!important;border:1.5px solid var(--black)!important;border-radius:0!important;font-weight:700!important;}}
 .stMultiSelect div[data-baseweb="select"],.stTextArea textarea,.stTextInput input,.stNumberInput input{{border-radius:0!important;border:1.5px solid var(--black)!important;background:var(--white)!important;color:var(--black)!important;}}
-@media(max-width:900px){{.block-container{{padding:1rem .82rem 3rem!important;}}.main-frame{{padding:1.05rem .9rem 2.5rem;border-left:1.5px solid var(--black);border-right:1.5px solid var(--black);}}.signature-lockup{{padding:2rem 0;margin-bottom:3rem;}}.signature-name{{font-size:clamp(4.1rem,16vw,5.8rem);line-height:.78;}}.signature-sub,.signature-intel{{letter-spacing:.34em;font-size:.78rem;}}.eyebrow{{font-size:.7rem;letter-spacing:.3em;}}.hero-title{{font-size:clamp(4.0rem,15vw,5.7rem);line-height:.86;}}.lead{{font-size:1.05rem;line-height:1.7;}}.chip-wrap{{grid-template-columns:1fr;gap:.75rem;margin-bottom:3rem;}}.chip{{min-height:48px;font-size:.66rem;letter-spacing:.24em;padding:0 .9rem;}}.identity-card,.section-card{{padding:1.7rem 1.15rem;margin:2.4rem 0;}}.identity-head{{font-size:clamp(3rem,12vw,4.6rem);}}.domain-line{{font-size:.76rem;letter-spacing:.24em;}}.metric-grid{{grid-template-columns:1fr;gap:1rem;}}.metric-card{{height:188px;min-height:188px;padding:1.45rem 1.25rem;}}.metric-number{{font-size:3.2rem;}}.module-title{{font-size:clamp(3.4rem,13vw,5rem);line-height:.92;}}.case-grid{{grid-template-columns:1fr;gap:1rem;}}.case-card{{height:300px;min-height:300px;padding:1.35rem 1.15rem;}}.case-title{{font-size:2.75rem;letter-spacing:-.05em;}}.case-meta{{font-size:.66rem;letter-spacing:.2em;}}.case-row{{font-size:.92rem;}}.bar-row{{grid-template-columns:82px 1fr 42px;gap:.7rem;}}.track{{height:22px;}}.bar-number{{font-size:1.55rem;}}.footer-signature{{font-size:4.1rem;}}}}
+@media(max-width:900px){{.block-container{{padding:1rem .82rem 3rem!important;}}.main-frame{{padding:1.05rem .9rem 2.5rem;border-left:1.5px solid var(--black);border-right:1.5px solid var(--black);}}.signature-lockup{{padding:2rem 0;margin-bottom:3rem;}}.signature-name{{font-size:clamp(4.1rem,16vw,5.8rem);line-height:.78;}}.signature-sub,.signature-intel{{letter-spacing:.34em;font-size:.78rem;}}.eyebrow{{font-size:.7rem;letter-spacing:.3em;}}.hero-title{{font-size:clamp(4.0rem,15vw,5.7rem);line-height:.86;}}.lead{{font-size:1.05rem;line-height:1.7;}}.chip-wrap{{grid-template-columns:1fr;gap:.75rem;margin-bottom:3rem;}}.chip{{min-height:48px;font-size:.66rem;letter-spacing:.24em;padding:0 .9rem;}}.identity-card,.section-card{{padding:1.7rem 1.15rem;margin:2.4rem 0;}}.identity-head{{font-size:clamp(3rem,12vw,4.6rem);}}.domain-line{{font-size:.76rem;letter-spacing:.24em;}}.metric-grid{{grid-template-columns:1fr;gap:1rem;}}.metric-card{{height:188px;min-height:188px;padding:1.45rem 1.25rem;}}.metric-number{{font-size:3.2rem;}}.summary-grid{{grid-template-columns:1fr;gap:.75rem;}}.summary-cell{{min-height:104px;padding:.9rem;}}.summary-value{{font-size:1.28rem;}}.module-title{{font-size:clamp(3.4rem,13vw,5rem);line-height:.92;}}.case-grid{{grid-template-columns:1fr;gap:1rem;}}.case-card{{height:300px;min-height:300px;padding:1.35rem 1.15rem;}}.case-title{{font-size:2.75rem;letter-spacing:-.05em;}}.case-meta{{font-size:.66rem;letter-spacing:.2em;}}.case-row{{font-size:.92rem;}}.bar-row{{grid-template-columns:82px 1fr 42px;gap:.7rem;}}.track{{height:22px;}}.bar-number{{font-size:1.55rem;}}.footer-signature{{font-size:4.1rem;}}}}
 </style>
 """)
 
@@ -229,6 +251,7 @@ case_ids = [row["id"] for row in filtered_rows]
 selected_id = st.selectbox("Select synthetic case for review", case_ids, index=0)
 selected_case = next(row for row in filtered_rows if row["id"] == selected_id)
 render_html('<div class="main-frame">')
+render_html(method_score_summary(selected_case))
 
 if module == "Command Center":
     render_html('<div class="module-title">Live Command Center</div><div class="lead">Use the filters above to isolate operational pressure across payer group, workflow domain, service line, and risk level.</div>')

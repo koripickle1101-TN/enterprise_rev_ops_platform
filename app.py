@@ -8,330 +8,337 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-ORANGE = "rgb(255, 130, 0)"
-BLACK = "rgb(0, 0, 0)"
-WHITE = "rgb(255, 255, 255)"
-WARM = "rgb(246, 243, 238)"
-LINE = "rgb(230, 224, 216)"
-INK = "rgb(24, 24, 24)"
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=Great+Vibes&display=swap');
 
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Great+Vibes&display=swap');
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    background: rgb(255,255,255) !important;
+    color: rgb(0,0,0) !important;
+    font-family: Inter, sans-serif !important;
+}
 
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-        background: rgb(255, 255, 255);
-        color: rgb(0, 0, 0);
-        font-family: Inter, sans-serif;
-    }
+[data-testid="stSidebar"] {
+    background: rgb(255,255,255) !important;
+    color: rgb(0,0,0) !important;
+    border-right: 4px solid rgb(255,130,0) !important;
+}
 
-    [data-testid="stSidebar"] {
-        background: rgb(255, 255, 255);
-        border-right: 1px solid rgb(230, 224, 216);
-    }
+.block-container {
+    padding-top: 2rem !important;
+    padding-left: 5rem !important;
+    padding-right: 5rem !important;
+    max-width: 1560px !important;
+}
 
-    [data-testid="stSidebar"] label {
-        color: rgb(0, 0, 0) !important;
-        font-weight: 800 !important;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        font-size: 0.70rem;
-    }
+h1, h2, h3 {
+    font-family: "Playfair Display", Georgia, serif !important;
+    color: rgb(0,0,0) !important;
+    letter-spacing: -0.055em !important;
+}
 
-    div[data-baseweb="select"] > div {
-        background: rgb(255, 255, 255) !important;
-        border: 1px solid rgb(230, 224, 216) !important;
-        border-radius: 18px !important;
-        box-shadow: 0 10px 28px rgba(0,0,0,0.05) !important;
-    }
+p, li, label, span, div {
+    font-family: Inter, sans-serif;
+}
 
-    span[data-baseweb="tag"] {
-        background: rgb(255, 130, 0) !important;
-        color: rgb(0, 0, 0) !important;
-        border-radius: 999px !important;
-        font-weight: 800 !important;
-    }
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div,
+textarea {
+    background: rgb(255,255,255) !important;
+    color: rgb(0,0,0) !important;
+    border: 2px solid rgb(0,0,0) !important;
+    border-radius: 18px !important;
+}
 
-    .block-container {
-        padding-top: 2.2rem;
-        padding-left: 5.2rem;
-        padding-right: 5.2rem;
-        max-width: 1560px;
-    }
+span[data-baseweb="tag"], span[data-baseweb="tag"] span, [data-baseweb="tag"] {
+    background: rgb(255,130,0) !important;
+    color: rgb(0,0,0) !important;
+    border: 2px solid rgb(0,0,0) !important;
+    border-radius: 999px !important;
+    font-weight: 900 !important;
+}
 
-    h1, h2, h3 {
-        font-family: "Playfair Display", Georgia, serif;
-        color: rgb(0, 0, 0);
-        letter-spacing: -0.05em;
-    }
+.stTabs [data-baseweb="tab"] {
+    background: rgb(255,255,255) !important;
+    color: rgb(0,0,0) !important;
+    border: 2px solid rgb(0,0,0) !important;
+    border-radius: 999px !important;
+    padding: 0.75rem 1rem !important;
+    font-weight: 900 !important;
+}
 
-    .brand-shell {
-        display: grid;
-        grid-template-columns: 1.25fr 0.75fr;
-        gap: 2rem;
-        align-items: stretch;
-        margin-bottom: 2rem;
-    }
+.stTabs [aria-selected="true"] {
+    background: rgb(255,130,0) !important;
+    color: rgb(0,0,0) !important;
+}
 
-    .hero-card {
-        border: 1px solid rgb(230, 224, 216);
-        border-radius: 38px;
-        padding: 3.6rem;
-        background: linear-gradient(135deg, rgb(255,255,255) 0%, rgb(255,248,239) 100%);
-        box-shadow: 0 28px 75px rgba(0,0,0,0.065);
-        min-height: 530px;
-        position: relative;
-        overflow: hidden;
-    }
+.hero-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 2rem;
+    align-items: stretch;
+    margin-bottom: 2rem;
+}
 
-    .hero-card:after {
-        content: "";
-        position: absolute;
-        right: -90px;
-        bottom: -90px;
-        width: 260px;
-        height: 260px;
-        border: 2px dotted rgb(255,130,0);
-        border-radius: 50%;
-        opacity: 0.25;
-    }
+.hero-card {
+    background: rgb(255,255,255);
+    color: rgb(0,0,0);
+    border: 3px solid rgb(0,0,0);
+    border-radius: 38px;
+    padding: 3.6rem;
+    min-height: 520px;
+    position: relative;
+    overflow: hidden;
+}
 
-    .brand-mark {
-        border: 1px solid rgb(230, 224, 216);
-        border-radius: 38px;
-        background: rgb(0, 0, 0);
-        color: rgb(255, 255, 255);
-        padding: 2.2rem;
-        box-shadow: 0 28px 75px rgba(0,0,0,0.14);
-        position: relative;
-        overflow: hidden;
-    }
+.hero-card:before {
+    content: "";
+    position: absolute;
+    right: 48px;
+    top: 48px;
+    width: 108px;
+    height: 108px;
+    border: 4px solid rgb(255,130,0);
+    border-radius: 50%;
+    box-shadow: 0 0 0 16px rgb(255,255,255), 0 0 0 20px rgb(255,130,0);
+}
 
-    .brand-mark:before {
-        content: "";
-        position: absolute;
-        top: 2rem;
-        right: 2rem;
-        width: 150px;
-        height: 150px;
-        border: 2px solid rgb(255,130,0);
-        border-radius: 50%;
-        box-shadow: inset 0 0 0 18px rgb(22,22,22), 0 0 45px rgba(255,130,0,0.28);
-    }
+.hero-card:after {
+    content: "";
+    position: absolute;
+    right: -105px;
+    bottom: -105px;
+    width: 310px;
+    height: 310px;
+    border: 4px dotted rgb(255,130,0);
+    border-radius: 50%;
+}
 
-    .kicker {
-        font-size: 0.72rem;
-        letter-spacing: 0.32em;
-        text-transform: uppercase;
-        font-weight: 900;
-        color: rgb(0,0,0);
-        margin-bottom: 1rem;
-    }
+.black-card {
+    background: rgb(0,0,0);
+    color: rgb(255,255,255);
+    border: 4px solid rgb(255,130,0);
+    border-radius: 38px;
+    padding: 2.5rem;
+    min-height: 520px;
+    position: relative;
+}
 
-    .brand-mark .kicker { color: rgb(255,255,255); }
+.black-card:before {
+    content: "";
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    width: 150px;
+    height: 150px;
+    border: 4px solid rgb(255,130,0);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 18px rgb(0,0,0), 0 0 0 22px rgb(255,130,0);
+}
 
-    .hero-title {
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: clamp(3.1rem, 7vw, 6.4rem);
-        line-height: 0.88;
-        letter-spacing: -0.075em;
-        font-weight: 900;
-        margin: 0;
-    }
+.kicker {
+    font-size: 0.72rem;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    font-weight: 900;
+    color: rgb(0,0,0);
+    margin-bottom: 1rem;
+}
 
-    .orange { color: rgb(255,130,0); }
+.black-card .kicker { color: rgb(255,255,255); }
 
-    .orange-line {
-        width: 190px;
-        height: 3px;
-        background: rgb(255,130,0);
-        margin-top: 1.5rem;
-        margin-bottom: 1.6rem;
-    }
+.hero-title {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(3.2rem, 7vw, 6.7rem);
+    line-height: 0.88;
+    letter-spacing: -0.08em;
+    font-weight: 900;
+    margin: 0;
+    color: rgb(0,0,0);
+}
 
-    .hero-copy {
-        font-size: 1.05rem;
-        line-height: 1.78;
-        color: rgb(24,24,24);
-        max-width: 900px;
-    }
+.orange { color: rgb(255,130,0); }
 
-    .badge {
-        display: inline-block;
-        padding: 0.58rem 0.86rem;
-        margin-top: 0.75rem;
-        margin-right: 0.45rem;
-        border: 1px solid rgb(255,130,0);
-        border-radius: 999px;
-        background: rgb(255,251,245);
-        color: rgb(0,0,0);
-        font-size: 0.74rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
+.orange-line {
+    width: 220px;
+    height: 4px;
+    background: rgb(255,130,0);
+    margin-top: 1.6rem;
+    margin-bottom: 1.7rem;
+}
 
-    .metric-card {
-        border: 1px solid rgb(230,224,216);
-        border-left: 6px solid rgb(255,130,0);
-        border-radius: 26px;
-        padding: 1.4rem;
-        background: rgb(255,255,255);
-        box-shadow: 0 18px 48px rgba(0,0,0,0.05);
-        min-height: 150px;
-    }
+.hero-copy {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: rgb(0,0,0);
+    max-width: 900px;
+    font-weight: 600;
+}
 
-    .metric-label {
-        font-size: 0.70rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        font-weight: 900;
-        color: rgb(0,0,0);
-        margin-bottom: 0.7rem;
-    }
+.badge {
+    display: inline-block;
+    background: rgb(255,255,255);
+    color: rgb(0,0,0);
+    border: 2px solid rgb(255,130,0);
+    border-radius: 999px;
+    padding: 0.6rem 0.9rem;
+    margin-top: 0.8rem;
+    margin-right: 0.5rem;
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
 
-    .metric-value {
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: 3rem;
-        font-weight: 900;
-        line-height: 0.95;
-        color: rgb(255,130,0);
-        font-variant-numeric: lining-nums;
-    }
+.metric-card {
+    background: rgb(255,255,255);
+    color: rgb(0,0,0);
+    border: 3px solid rgb(0,0,0);
+    border-left: 12px solid rgb(255,130,0);
+    border-radius: 26px;
+    padding: 1.45rem;
+    min-height: 160px;
+}
 
-    .metric-note {
-        font-size: 0.82rem;
-        color: rgb(78,78,78);
-        line-height: 1.45;
-        margin-top: 0.85rem;
-    }
+.metric-label {
+    font-size: 0.70rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 900;
+    color: rgb(0,0,0);
+    margin-bottom: 0.75rem;
+}
 
-    .panel {
-        border: 1px solid rgb(230,224,216);
-        border-radius: 30px;
-        padding: 2.1rem;
-        background: rgb(255,255,255);
-        box-shadow: 0 20px 52px rgba(0,0,0,0.045);
-        margin: 1.3rem 0;
-    }
+.metric-value {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 3.15rem;
+    font-weight: 900;
+    line-height: 0.95;
+    color: rgb(255,130,0);
+}
 
-    .black-panel {
-        border-radius: 32px;
-        padding: 2.3rem;
-        background: rgb(0,0,0);
-        color: rgb(255,255,255);
-        border-left: 8px solid rgb(255,130,0);
-        box-shadow: 0 28px 65px rgba(0,0,0,0.18);
-        margin: 1.3rem 0;
-    }
+.metric-note {
+    font-size: 0.82rem;
+    color: rgb(0,0,0);
+    line-height: 1.45;
+    margin-top: 0.9rem;
+    font-weight: 700;
+}
 
-    .black-panel h3 {
-        color: rgb(255,255,255);
-        font-size: 2.2rem;
-        margin: 0 0 1rem 0;
-    }
+.panel {
+    background: rgb(255,255,255);
+    color: rgb(0,0,0);
+    border: 3px solid rgb(0,0,0);
+    border-radius: 30px;
+    padding: 2.15rem;
+    margin: 1.4rem 0;
+}
 
-    .black-panel p { color: rgb(245,245,245); line-height: 1.7; }
+.dark-panel {
+    background: rgb(0,0,0);
+    color: rgb(255,255,255);
+    border: 4px solid rgb(255,130,0);
+    border-left: 14px solid rgb(255,130,0);
+    border-radius: 32px;
+    padding: 2.35rem;
+    margin: 1.4rem 0;
+}
 
-    .node-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(140px, 1fr));
-        gap: 1rem;
-        margin-top: 1.4rem;
-    }
+.dark-panel h3 {
+    color: rgb(255,255,255) !important;
+    font-size: 2.35rem;
+    margin: 0 0 1rem 0;
+}
 
-    .node {
-        border: 2px solid rgb(255,130,0);
-        border-radius: 999px;
-        min-height: 84px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        background: rgb(255,255,255);
-        box-shadow: inset 0 0 0 10px rgb(255,246,235), 0 0 28px rgba(255,130,0,0.13);
-        font-size: 0.73rem;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        padding: 0.9rem;
-    }
+.dark-panel p {
+    color: rgb(255,255,255);
+    line-height: 1.7;
+    font-weight: 600;
+}
 
-    .signature {
-        font-family: "Great Vibes", cursive;
-        font-size: 3.8rem;
-        color: rgb(20,20,20);
-        line-height: 1;
-        transform: rotate(-1deg);
-        margin-top: 0.3rem;
-        margin-bottom: 0.8rem;
-    }
+.node-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-top: 1.4rem;
+}
 
-    .icon-pill {
-        display: inline-block;
-        border: 1px solid rgb(230,224,216);
-        border-radius: 999px;
-        padding: 0.55rem 0.8rem;
-        margin: 0.25rem;
-        color: rgb(0,0,0) !important;
-        text-decoration: none !important;
-        font-size: 0.75rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
+.node {
+    border: 3px solid rgb(255,130,0);
+    border-radius: 999px;
+    min-height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: rgb(255,255,255);
+    color: rgb(0,0,0);
+    box-shadow: inset 0 0 0 10px rgb(255,255,255), inset 0 0 0 13px rgb(255,130,0);
+    font-size: 0.73rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 0.9rem;
+}
 
-    div[data-testid="stMetric"] {
-        background: rgb(255,255,255);
-        border: 1px solid rgb(230,224,216);
-        border-left: 6px solid rgb(255,130,0);
-        border-radius: 24px;
-        padding: 1rem;
-    }
+.signature {
+    font-family: "Great Vibes", cursive;
+    font-size: 4rem;
+    color: rgb(0,0,0);
+    line-height: 1;
+    transform: rotate(-1deg);
+    margin-top: 0.3rem;
+    margin-bottom: 0.8rem;
+}
 
-    div[data-testid="stMetricValue"] {
-        color: rgb(255,130,0);
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: 2.2rem;
-        font-weight: 900;
-    }
+.icon-pill {
+    display: inline-block;
+    background: rgb(255,255,255);
+    color: rgb(0,0,0) !important;
+    border: 2px solid rgb(0,0,0);
+    border-radius: 999px;
+    padding: 0.58rem 0.85rem;
+    margin: 0.25rem;
+    text-decoration: none !important;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
 
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 999px;
-        background: rgb(255,251,245);
-        border: 1px solid rgb(230,224,216);
-        padding: 0.7rem 1rem;
-        font-weight: 900;
-        color: rgb(0,0,0);
-    }
+.icon-pill:hover { background: rgb(255,130,0); }
 
-    [data-testid="stMainMenu"], footer { visibility: hidden; }
+[data-testid="stDataFrame"] {
+    border: 3px solid rgb(0,0,0);
+    border-radius: 18px;
+    overflow: hidden;
+}
 
-    @media (max-width: 950px) {
-        .block-container { padding-left: 1rem; padding-right: 1rem; }
-        .brand-shell { grid-template-columns: 1fr; }
-        .hero-card { padding: 2rem; min-height: auto; }
-        .node-grid { grid-template-columns: 1fr; }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+[data-testid="stMainMenu"], footer { visibility: hidden; }
+
+@media (max-width: 950px) {
+    .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-card { padding: 2rem; min-height: auto; }
+    .black-card { min-height: 380px; }
+    .node-grid { grid-template-columns: 1fr; }
+}
+</style>
+""", unsafe_allow_html=True)
 
 @st.cache_data
 def build_records():
     data = [
         ["REV-0001", "Commercial", "Patient Access", "Orthopedics", "Eligibility mismatch", 9, 12600, "High", "Missing subscriber relation", "Escalate eligibility verification"],
-        ["REV-0002", "Medicare Advantage", "Authorization Control", "Cardiology", "Aging authorization", 6, 28750, "High", "Pending clinical packet", "Request documentation packet"],
+        ["REV-0002", "Medicare Advantage", "Authorization Control", "Cardiology", "Aging authorization", 6, 28750, "High", "Pending packet", "Request packet review"],
         ["REV-0003", "Medicaid", "Documentation Readiness", "Rehabilitation", "Incomplete plan of care", 4, 9300, "Moderate", "Therapy notes incomplete", "Validate documentation readiness"],
         ["REV-0004", "Commercial", "Routing Intelligence", "Imaging", "Wrong portal route", 8, 14500, "High", "Benefit manager carve out", "Confirm routing owner"],
         ["REV-0005", "Marketplace", "Eligibility Verification", "Primary Care", "Coverage inactive", 3, 4200, "Moderate", "Coverage termination risk", "Recheck eligibility"],
-        ["REV-0006", "Self Pay", "Financial Clearance", "Surgery", "Estimate not completed", 2, 6800, "Low", "Patient estimate missing", "Create estimate review"],
-        ["REV-0007", "Commercial", "Denial Prevention", "Oncology", "Medical necessity exposure", 7, 33100, "High", "Policy criteria unclear", "Route to human review"],
-        ["REV-0008", "Medicare Advantage", "Authorization Control", "Neurology", "SLA risk", 5, 18500, "Moderate", "Authorization pending five days", "Escalate payer follow up"],
+        ["REV-0006", "Self Pay", "Financial Clearance", "Surgery", "Estimate not completed", 2, 6800, "Low", "Estimate missing", "Create estimate review"],
+        ["REV-0007", "Commercial", "Denial Prevention", "Oncology", "Policy criteria exposure", 7, 33100, "High", "Criteria unclear", "Route to human review"],
+        ["REV-0008", "Medicare Advantage", "Authorization Control", "Neurology", "SLA risk", 5, 18500, "Moderate", "Pending five days", "Escalate payer follow up"],
         ["REV-0009", "Medicaid", "Documentation Readiness", "Behavioral Health", "Missing referral", 6, 7600, "Moderate", "Referral not attached", "Attach referral evidence"],
-        ["REV-0010", "Commercial", "Eligibility Verification", "Cardiology", "COB conflict", 8, 22100, "High", "Coordination of benefits unresolved", "Validate primary payer"],
+        ["REV-0010", "Commercial", "Eligibility Verification", "Cardiology", "COB conflict", 8, 22100, "High", "Benefits unresolved", "Validate primary payer"],
         ["REV-0011", "Marketplace", "Routing Intelligence", "Imaging", "Payer policy mismatch", 7, 11900, "High", "Delegated review required", "Check benefit manager"],
         ["REV-0012", "Medicare Advantage", "Denial Prevention", "Rehabilitation", "Appeal exposure", 5, 15200, "Moderate", "Denial reason pattern detected", "Prepare prevention brief"],
     ]
@@ -340,49 +347,41 @@ def build_records():
 
 records = build_records()
 
-st.sidebar.markdown("### Control Filters")
-risk_filter = st.sidebar.multiselect("Filter by risk level", sorted(records["risk_level"].unique()), default=sorted(records["risk_level"].unique()))
-payer_filter = st.sidebar.multiselect("Filter by payer group", sorted(records["payer_group"].unique()), default=sorted(records["payer_group"].unique()))
-domain_filter = st.sidebar.multiselect("Filter by workflow area", sorted(records["workflow_domain"].unique()), default=sorted(records["workflow_domain"].unique()))
-
-filtered = records[
-    records["risk_level"].isin(risk_filter)
-    & records["payer_group"].isin(payer_filter)
-    & records["workflow_domain"].isin(domain_filter)
-]
-
-high_count = int((filtered["risk_level"] == "High").sum())
-sla_count = int((filtered["aging_days"] >= 5).sum())
-exposure = int(filtered["synthetic_exposure"].sum()) if not filtered.empty else 0
-avg_age = round(float(filtered["aging_days"].mean()), 1) if not filtered.empty else 0
-
 st.markdown("""
-<div class="brand-shell">
+<div class="hero-grid">
     <div class="hero-card">
         <div class="kicker">Kori Pickle • Healthcare Operations Intelligence</div>
         <h1 class="hero-title">Enterprise Revenue <span class="orange">Operations</span> Platform</h1>
         <div class="orange-line"></div>
-        <p class="hero-copy">
-            A premium synthetic healthcare operations control system for patient access, eligibility verification,
-            prior authorization pressure, routing intelligence, documentation readiness, denial prevention,
-            payer friction, and leadership reporting.
-        </p>
-        <p class="hero-copy">
-            Built as a public portfolio artifact using synthetic records only. The platform demonstrates operational review signals,
-            not clinical judgment, payer determination, coding direction, billing direction, or case specific recommendations.
-        </p>
+        <p class="hero-copy">A premium synthetic operations control system for patient access, eligibility verification, authorization pressure, routing intelligence, documentation readiness, denial prevention, payer friction, and leadership reporting.</p>
+        <p class="hero-copy">Built as a public portfolio artifact using synthetic records only. The platform demonstrates operational review signals and human review workflows.</p>
+        <span class="badge">White</span>
+        <span class="badge">Black</span>
+        <span class="badge">Tennessee Orange</span>
         <span class="badge">Synthetic Data</span>
-        <span class="badge">Human Review Required</span>
-        <span class="badge">No Real Records</span>
-        <span class="badge">Built by Kori Pickle</span>
     </div>
-    <div class="brand-mark">
+    <div class="black-card">
         <div class="kicker">Operational Identity</div>
-        <h3 style="color:white; font-size:2.8rem; line-height:0.95; margin-top:8rem;">Workflow visibility before revenue damage.</h3>
-        <p style="color:rgb(245,245,245); line-height:1.7;">Designed around one question: where did the workflow first lose control?</p>
+        <h3 style="color:rgb(255,255,255); font-size:2.9rem; line-height:0.95; margin-top:8rem;">Workflow visibility before revenue damage.</h3>
+        <p style="color:rgb(255,255,255); line-height:1.7; font-weight:700;">Designed around one question: where did the workflow first lose control?</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+with st.expander("Command Filters", expanded=True):
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        risk_filter = st.multiselect("Filter by risk level", sorted(records["risk_level"].unique()), default=sorted(records["risk_level"].unique()))
+    with f2:
+        payer_filter = st.multiselect("Filter by payer group", sorted(records["payer_group"].unique()), default=sorted(records["payer_group"].unique()))
+    with f3:
+        domain_filter = st.multiselect("Filter by workflow area", sorted(records["workflow_domain"].unique()), default=sorted(records["workflow_domain"].unique()))
+
+filtered = records[records["risk_level"].isin(risk_filter) & records["payer_group"].isin(payer_filter) & records["workflow_domain"].isin(domain_filter)]
+high_count = int((filtered["risk_level"] == "High").sum())
+sla_count = int((filtered["aging_days"] >= 5).sum())
+exposure = int(filtered["synthetic_exposure"].sum()) if not filtered.empty else 0
+avg_age = round(float(filtered["aging_days"].mean()), 1) if not filtered.empty else 0
 
 c1, c2, c3, c4 = st.columns(4)
 with c1:
@@ -398,7 +397,7 @@ tab_a, tab_b, tab_c, tab_d, tab_e = st.tabs(["Command Center", "Control Grid", "
 
 with tab_a:
     st.markdown("## Live Command Center")
-    st.write("Use the sidebar filters to isolate operational pressure across payer, workflow domain, and risk level.")
+    st.write("Use the filters above to isolate operational pressure across payer, workflow domain, and risk level.")
     st.dataframe(filtered, hide_index=True, use_container_width=True)
     left, right = st.columns([5, 4])
     with left:
@@ -406,28 +405,11 @@ with tab_a:
         st.markdown("### Risk Queue Distribution")
         st.bar_chart(risk_summary.set_index("risk_level"))
     with right:
-        st.markdown(f"""
-        <div class="black-panel">
-            <h3>Executive Interpretation</h3>
-            <p>The current filtered view shows {len(filtered)} synthetic records, {high_count} high risk records, {sla_count} SLA pressure signals, and ${exposure:,.0f} in simulated exposure. These are prioritization signals for human review, not automated determinations.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="dark-panel"><h3>Executive Interpretation</h3><p>The current filtered view shows {len(filtered)} synthetic records, {high_count} high risk records, {sla_count} SLA pressure signals, and ${exposure:,.0f} in simulated exposure. These are prioritization signals for human review.</p></div>', unsafe_allow_html=True)
 
 with tab_b:
     st.markdown("## Revenue Operations Control Grid")
-    st.markdown("""
-    <div class="panel">
-        <div class="kicker">Workflow Chain</div>
-        <div class="node-grid">
-            <div class="node">Patient Access Intake</div>
-            <div class="node">Eligibility Control</div>
-            <div class="node">Routing Intelligence</div>
-            <div class="node">Authorization Aging</div>
-            <div class="node">Documentation Readiness</div>
-            <div class="node">Denial Prevention</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="panel"><div class="kicker">Workflow Chain</div><div class="node-grid"><div class="node">Patient Access Intake</div><div class="node">Eligibility Control</div><div class="node">Routing Intelligence</div><div class="node">Authorization Aging</div><div class="node">Documentation Readiness</div><div class="node">Denial Prevention</div></div></div>', unsafe_allow_html=True)
     domain_summary = filtered.groupby("workflow_domain").agg(records=("case_id", "count"), exposure=("synthetic_exposure", "sum"), average_aging=("aging_days", "mean")).reset_index()
     domain_summary["average_aging"] = domain_summary["average_aging"].round(1)
     st.dataframe(domain_summary, hide_index=True, use_container_width=True)
@@ -454,45 +436,27 @@ with tab_d:
     st.markdown("## Leadership Brief Builder")
     brief_type = st.selectbox("Brief type", ["Executive readout", "Daily huddle script", "Denial prevention action plan"])
     if brief_type == "Executive readout":
-        brief = f"Enterprise Revenue Operations Brief\n\nCurrent synthetic command center view shows {len(filtered)} records, {high_count} high risk records, {sla_count} SLA pressure signals, average aging of {avg_age} days, and ${exposure:,.0f} in simulated exposure.\n\nPrimary concern:\nWorkflow pressure is forming before downstream denial activity. The most important control points are eligibility verification, routing ownership, documentation readiness, authorization aging, and payer follow up.\n\nRecommended actions:\n1. Prioritize high risk records for human review.\n2. Validate payer routing before submission.\n3. Confirm documentation readiness before follow up.\n4. Track aged requests by payer and service line.\n5. Maintain responsible use boundaries.\n\nCreated by Kori Pickle"
+        brief = f"Enterprise Revenue Operations Brief\n\nCurrent synthetic command center view shows {len(filtered)} records, {high_count} high risk records, {sla_count} SLA pressure signals, average aging of {avg_age} days, and ${exposure:,.0f} in simulated exposure.\n\nPrimary concern:\nWorkflow pressure is forming before downstream denial activity.\n\nRecommended actions:\n1. Prioritize high risk records for human review.\n2. Validate payer routing before submission.\n3. Confirm documentation readiness before follow up.\n4. Track aged requests by payer and service line.\n\nCreated by Kori Pickle"
     elif brief_type == "Daily huddle script":
-        brief = f"Daily Huddle Script\n\nToday we are reviewing {len(filtered)} synthetic workflow records.\n\nFocus areas:\nHigh risk queue: {high_count}\nSLA pressure queue: {sla_count}\nSimulated exposure: ${exposure:,.0f}\n\nHuddle questions:\n1. Which records are aging before payer response?\n2. Which requests may be routed incorrectly?\n3. Which documentation packets need review?\n4. What can be stabilized today before rework, delay, denial, or patient frustration occurs?\n\nCreated by Kori Pickle"
+        brief = f"Daily Huddle Script\n\nToday we are reviewing {len(filtered)} synthetic workflow records.\n\nFocus areas:\nHigh risk queue: {high_count}\nSLA pressure queue: {sla_count}\nSimulated exposure: ${exposure:,.0f}\n\nCreated by Kori Pickle"
     else:
-        brief = "Denial Prevention Action Plan\n\nObjective:\nUse early workflow visibility to identify operational risk before downstream denial activity develops.\n\nPriorities:\n1. Eligibility mismatch review\n2. Authorization aging review\n3. Documentation readiness review\n4. Payer routing validation\n5. Follow up escalation\n6. Human review governance\n\nOperating question:\nWhere did the workflow first lose control?\n\nCreated by Kori Pickle"
+        brief = "Denial Prevention Action Plan\n\nObjective:\nUse early workflow visibility to identify operational risk before downstream denial activity develops.\n\nPriorities:\n1. Eligibility mismatch review\n2. Authorization aging review\n3. Documentation readiness review\n4. Payer routing validation\n5. Follow up escalation\n\nCreated by Kori Pickle"
     st.text_area("Generated leadership output", brief, height=390)
     st.download_button("Download brief", data=brief, file_name="kori_pickle_revenue_operations_brief.txt", mime="text/plain")
 
 with tab_e:
     st.markdown("## Responsible Data Governance")
-    st.markdown("""
-    <div class="black-panel">
-        <h3>Synthetic Portfolio Standard</h3>
-        <p>This public platform uses synthetic data only. It is built for healthcare operations learning, portfolio demonstration, workflow intelligence, and responsible technology positioning.</p>
-        <p>It does not use real records, EHR screenshots, claim files, member identifiers, or organization owned production data.</p>
-    </div>
-    <div class="black-panel">
-        <h3>Use Boundary</h3>
-        <p>The platform does not make clinical decisions, payer decisions, coding decisions, billing determinations, medical necessity decisions, or case specific recommendations. All outputs are operational review signals requiring human validation.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="dark-panel"><h3>Synthetic Portfolio Standard</h3><p>This public platform uses synthetic data only. It is built for healthcare operations learning, portfolio demonstration, workflow intelligence, and responsible technology positioning.</p></div>', unsafe_allow_html=True)
     boundary = pd.DataFrame([
         ["Synthetic case identifiers", "Allowed"],
         ["Fake payer groups", "Allowed"],
         ["Simulated authorization aging", "Allowed"],
         ["Simulated documentation gaps", "Allowed"],
         ["Simulated exposure values", "Allowed"],
-        ["Real records", "Not used"],
+        ["Protected data", "Not used"],
         ["EHR screenshots", "Not used"],
-        ["Organization owned production data", "Not used"],
     ], columns=["Data Element", "Portfolio Status"])
     st.dataframe(boundary, hide_index=True, use_container_width=True)
 
-st.markdown("""
-<div class="panel" style="text-align:center; margin-top:3rem;">
-    <div class="kicker">Created by Kori Pickle</div>
-    <div class="signature">Kori Pickle</div>
-    <p class="small">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p>
-    <a class="icon-pill" href="https://www.linkedin.com" target="_blank">in LinkedIn</a>
-    <a class="icon-pill" href="https://github.com/koripickle1101-TN" target="_blank">GitHub</a>
-</div>
-""", unsafe_allow_html=True)
+st.markdown('<div class="panel" style="text-align:center; margin-top:3rem;"><div class="kicker">Created by Kori Pickle</div><div class="signature">Kori Pickle</div><p style="color:rgb(0,0,0); font-weight:800;">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p><a class="icon-pill" href="https://www.linkedin.com" target="_blank">in LinkedIn</a><a class="icon-pill" href="https://github.com/koripickle1101-TN" target="_blank">GitHub</a></div>', unsafe_allow_html=True)
+"""

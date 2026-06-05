@@ -9,10 +9,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-BRAND_ORANGE = "rgb(255, 130, 0)"
-BRAND_BLACK = "rgb(0, 0, 0)"
-BRAND_WHITE = "rgb(255, 255, 255)"
-
 
 def load_logo():
     logo_path = Path("assets/brand_logo.b64")
@@ -25,7 +21,7 @@ logo_b64 = load_logo()
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;500;600;700;800;900&family=Inter+Tight:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
     --orange: rgb(255, 130, 0);
@@ -39,17 +35,18 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-
 }
 
 .block-container {
-    padding-top: 2.25rem !important;
+    padding-top: 2.4rem !important;
     padding-left: 4.5rem !important;
     padding-right: 4.5rem !important;
     padding-bottom: 4rem !important;
-    max-width: 1500px !important;
+    max-width: 1480px !important;
 }
 
 h1, h2, h3 {
     font-family: "Playfair Display", Georgia, serif !important;
     color: var(--black) !important;
-    letter-spacing: -0.055em !important;
+    letter-spacing: -0.045em !important;
+    font-weight: 600 !important;
 }
 
 p, div, label, span, button {
@@ -58,13 +55,13 @@ p, div, label, span, button {
 
 [data-testid="stSidebar"] {
     background: var(--white) !important;
-    border-right: 3px solid var(--black) !important;
+    border-right: 2px solid var(--black) !important;
 }
 
 [data-testid="stSidebar"] label {
     color: var(--black) !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.05em !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
 }
 
 [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p {
@@ -86,11 +83,11 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     color: var(--black) !important;
     border: 2px solid var(--orange) !important;
     border-radius: 0 !important;
-    font-weight: 900 !important;
+    font-weight: 700 !important;
 }
 
 .stTabs [data-baseweb="tab-list"] {
-    gap: 0.65rem;
+    gap: 0.7rem;
 }
 
 .stTabs [data-baseweb="tab"] {
@@ -98,9 +95,9 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     color: var(--black) !important;
     border: 2px solid var(--black) !important;
     border-radius: 0 !important;
-    padding: 0.8rem 1.05rem !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.04em !important;
+    padding: 0.75rem 1.1rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.03em !important;
 }
 
 .stTabs [aria-selected="true"] {
@@ -114,46 +111,46 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 }
 
 .brand-shell {
-    border: 3px solid var(--black);
+    border: 2px solid var(--black);
     background: var(--white);
-    padding: 2.25rem;
+    padding: 2.35rem;
     margin-bottom: 2rem;
 }
 
 .brand-logo {
     width: 100%;
-    max-width: 980px;
+    max-width: 940px;
     display: block;
     margin: 0 auto 2.3rem auto;
 }
 
 .hero {
     display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 2.25rem;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 2.35rem;
     align-items: stretch;
 }
 
 .hero-left {
-    border-top: 12px solid var(--orange);
+    border-top: 8px solid var(--orange);
     padding-top: 2rem;
 }
 
 .kicker {
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     letter-spacing: 0.34em;
     text-transform: uppercase;
-    font-weight: 900;
+    font-weight: 800;
     color: var(--black);
     margin-bottom: 1.1rem;
 }
 
 .hero-title {
     font-family: "Playfair Display", Georgia, serif !important;
-    font-size: clamp(3.8rem, 7vw, 7rem);
-    line-height: 0.87;
-    letter-spacing: -0.08em;
-    font-weight: 900;
+    font-size: clamp(3.6rem, 7vw, 6.8rem);
+    line-height: 0.92;
+    letter-spacing: -0.065em;
+    font-weight: 600;
     color: var(--black);
     margin: 0;
 }
@@ -163,18 +160,18 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 }
 
 .hero-copy {
-    max-width: 820px;
+    max-width: 830px;
     margin-top: 1.7rem;
-    font-size: 1.1rem;
-    line-height: 1.7;
-    font-weight: 650;
+    font-size: 1.08rem;
+    line-height: 1.78;
+    font-weight: 600;
     color: var(--black);
 }
 
 .identity-card {
-    border: 3px solid var(--black);
+    border: 2px solid var(--black);
     padding: 2rem;
-    min-height: 405px;
+    min-height: 395px;
     position: relative;
     overflow: hidden;
     background: var(--white);
@@ -185,22 +182,22 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     position: absolute;
     width: 210px;
     height: 210px;
-    border: 7px solid var(--orange);
+    border: 5px solid var(--orange);
     border-radius: 50%;
     top: -45px;
     right: -45px;
-    box-shadow: inset 0 0 0 28px var(--white), inset 0 0 0 34px var(--orange);
+    box-shadow: inset 0 0 0 28px var(--white), inset 0 0 0 32px var(--orange);
 }
 
 .identity-title {
     position: relative;
     z-index: 2;
-    margin-top: 10.5rem;
+    margin-top: 10rem;
     font-family: "Playfair Display", Georgia, serif !important;
-    font-size: clamp(2.25rem, 4vw, 3.75rem);
-    line-height: 0.98;
-    letter-spacing: -0.06em;
-    font-weight: 900;
+    font-size: clamp(2.1rem, 4vw, 3.45rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    font-weight: 600;
     color: var(--black);
 }
 
@@ -209,7 +206,7 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     z-index: 2;
     font-size: 1rem;
     line-height: 1.65;
-    font-weight: 750;
+    font-weight: 600;
     color: var(--black);
 }
 
@@ -220,12 +217,12 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 .badge {
     display: inline-block;
     border: 2px solid var(--black);
-    border-left: 10px solid var(--orange);
-    padding: 0.55rem 0.8rem;
+    border-left: 8px solid var(--orange);
+    padding: 0.55rem 0.85rem;
     margin: 0.35rem 0.35rem 0.35rem 0;
     font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.09em;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--black);
     background: var(--white);
@@ -241,32 +238,34 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 .metric-card {
     background: var(--white);
     color: var(--black);
-    border: 3px solid var(--black);
-    border-top: 10px solid var(--orange);
-    padding: 1.45rem;
+    border: 2px solid var(--black);
+    border-top: 7px solid var(--orange);
+    padding: 1.5rem;
     min-height: 180px;
 }
 
 .metric-label {
-    font-size: 0.70rem;
+    font-size: 0.68rem;
     letter-spacing: 0.24em;
     text-transform: uppercase;
-    font-weight: 900;
+    font-weight: 800;
     color: var(--black);
-    margin-bottom: 1.05rem;
+    margin-bottom: 0.9rem;
 }
 
 .metric-value {
-    font-family: "Inter Tight", Inter, Arial Black, sans-serif !important;
-    font-size: clamp(2.3rem, 5vw, 4.25rem);
-    font-weight: 900;
-    letter-spacing: -0.07em;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif !important;
+    font-size: clamp(3rem, 5.4vw, 5.4rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
     line-height: 0.9;
     color: var(--black);
 }
 
 .metric-value .orange-number {
     color: var(--orange);
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif !important;
+    font-weight: 500;
 }
 
 .metric-note {
@@ -274,11 +273,11 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     color: var(--black);
     line-height: 1.45;
     margin-top: 1.05rem;
-    font-weight: 750;
+    font-weight: 600;
 }
 
 .section-panel {
-    border: 3px solid var(--black);
+    border: 2px solid var(--black);
     background: var(--white);
     padding: 2rem;
     margin: 1.3rem 0;
@@ -287,17 +286,17 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 .section-title {
     font-family: "Playfair Display", Georgia, serif !important;
     font-size: clamp(2.2rem, 5vw, 4rem);
-    line-height: 0.95;
-    letter-spacing: -0.055em;
-    font-weight: 900;
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    font-weight: 600;
     margin-bottom: 1rem;
 }
 
 .black-panel {
     background: var(--black);
     color: var(--white);
-    border: 3px solid var(--black);
-    border-top: 12px solid var(--orange);
+    border: 2px solid var(--black);
+    border-top: 8px solid var(--orange);
     padding: 2rem;
     margin: 1rem 0;
 }
@@ -308,9 +307,10 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 
 .black-panel h3 {
     font-family: "Playfair Display", Georgia, serif !important;
-    font-size: 2.4rem;
-    line-height: 0.98;
-    letter-spacing: -0.05em;
+    font-size: 2.25rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-weight: 600;
     margin: 0 0 1rem 0;
 }
 
@@ -323,19 +323,19 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 
 .node {
     min-height: 96px;
-    border: 3px solid var(--orange);
+    border: 2px solid var(--orange);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     color: var(--black);
-    font-weight: 900;
+    font-weight: 800;
     font-size: 0.68rem;
     line-height: 1.15;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    box-shadow: inset 0 0 0 9px var(--white), inset 0 0 0 12px var(--orange);
+    box-shadow: inset 0 0 0 9px var(--white), inset 0 0 0 11px var(--orange);
     padding: 1rem;
 }
 
@@ -345,11 +345,11 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     gap: 1rem;
     align-items: center;
     margin: 0.9rem 0;
-    font-weight: 850;
+    font-weight: 700;
 }
 
 .custom-bar-track {
-    height: 20px;
+    height: 18px;
     border: 2px solid var(--black);
     background: var(--white);
 }
@@ -361,8 +361,8 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 
 .footer-brand {
     text-align: center;
-    border-top: 4px solid var(--orange);
-    border-bottom: 4px solid var(--orange);
+    border-top: 3px solid var(--orange);
+    border-bottom: 3px solid var(--orange);
     padding: 2.5rem 1rem;
     margin-top: 3rem;
 }
@@ -383,7 +383,7 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
     margin: 0.3rem;
     text-decoration: none !important;
     font-size: 0.75rem;
-    font-weight: 900;
+    font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -393,13 +393,13 @@ span[data-baseweb="tag"], [data-baseweb="tag"] {
 }
 
 [data-testid="stDataFrame"] {
-    border: 3px solid var(--black);
+    border: 2px solid var(--black);
 }
 
 [data-testid="stMetricValue"] {
-    font-family: "Inter Tight", Inter, Arial Black, sans-serif !important;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif !important;
     color: var(--black) !important;
-    font-weight: 900 !important;
+    font-weight: 500 !important;
 }
 
 [data-testid="stMainMenu"], footer {
@@ -480,7 +480,7 @@ st.markdown(f"""
             <div class="kicker">Kori Pickle • Healthcare Operations Intelligence</div>
             <div class="hero-title">Enterprise Revenue <span class="orange-word">Operations</span> Platform</div>
             <p class="hero-copy">A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, documentation readiness, denial prevention, payer friction analysis, and responsible operational intelligence.</p>
-            <p class="hero-copy">This is not a generic dashboard. It is a working portfolio system built around operational review signals, human oversight, and workflow stabilization logic.</p>
+            <p class="hero-copy">This working portfolio system is built around operational review signals, human oversight, and workflow stabilization logic.</p>
             <div class="badge-row">
                 <span class="badge">No PHI</span>
                 <span class="badge">Synthetic Data</span>
@@ -605,7 +605,7 @@ st.markdown(f"""
 <div class="footer-brand">
     {footer_logo}
     <div class="kicker">Created by Kori Pickle</div>
-    <p style="color:rgb(0,0,0); font-weight:900;">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p>
+    <p style="color:rgb(0,0,0); font-weight:700;">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p>
     <a class="icon-link" href="https://www.linkedin.com/in/kori-pickle" target="_blank">LinkedIn</a>
     <a class="icon-link" href="https://github.com/koripickle1101-TN" target="_blank">GitHub</a>
 </div>

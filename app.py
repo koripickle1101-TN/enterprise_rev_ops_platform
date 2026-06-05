@@ -35,10 +35,9 @@ DEFAULT_DATA = [
 ]
 
 REQUIRED_COLUMNS = {
-    "Case ID": "id", "Payer Group": "payer", "Workflow Domain": "domain", "Service Line": "line",
-    "Risk": "risk", "Owner": "owner", "Days Open": "days", "SLA Limit": "sla", "Exposure": "exposure",
-    "Status": "status", "Required Docs": "required", "Present Docs": "present", "First Control Loss": "loss",
-    "Payer Rule": "rule", "Next Action": "action"
+    "Case ID":"id", "Payer Group":"payer", "Workflow Domain":"domain", "Service Line":"line", "Risk":"risk", "Owner":"owner",
+    "Days Open":"days", "SLA Limit":"sla", "Exposure":"exposure", "Status":"status", "Required Docs":"required", "Present Docs":"present",
+    "First Control Loss":"loss", "Payer Rule":"rule", "Next Action":"action"
 }
 CONTROL_DOMAINS = ["Access Control", "Documentation Control", "Authorization Control", "Routing Control", "Follow-Up Control"]
 
@@ -59,8 +58,7 @@ def readiness_score(case):
     missing = len(missing_docs(case))
     overdue = max(0, int(case.get("days", 0)) - int(case.get("sla", 5)))
     risk_penalty = {"Low": 0, "Moderate": 7, "High": 16}.get(case.get("risk", ""), 5)
-    score = 100 - missing * 13 - overdue * 8 - risk_penalty
-    return round(max(0, min(100, score)), 1)
+    return round(max(0, min(100, 100 - missing * 13 - overdue * 8 - risk_penalty)), 1)
 
 def wlcm_scores(case):
     scores = {domain: 86 for domain in CONTROL_DOMAINS}
@@ -108,14 +106,7 @@ def auth_readiness(case):
     }
     met = sum(1 for value in factors.values() if value)
     score = round(met / len(factors) * 100, 1)
-    if score >= 85:
-        status = "Ready"
-    elif score >= 65:
-        status = "Needs Review"
-    elif case.get("risk") == "High":
-        status = "Escalate"
-    else:
-        status = "Not Ready"
+    status = "Ready" if score >= 85 else "Needs Review" if score >= 65 else "Escalate" if case.get("risk") == "High" else "Not Ready"
     return factors, score, status
 
 def sla_status(case):
@@ -138,9 +129,7 @@ def parse_csv(uploaded):
         reader = csv.DictReader(StringIO(raw))
         rows = []
         for row in reader:
-            item = {}
-            for external, internal in REQUIRED_COLUMNS.items():
-                item[internal] = row.get(external, row.get(internal, ""))
+            item = {internal: row.get(external, row.get(internal, "")) for external, internal in REQUIRED_COLUMNS.items()}
             for key in ["days", "sla", "exposure"]:
                 try:
                     item[key] = int(float(item[key]))
@@ -148,9 +137,7 @@ def parse_csv(uploaded):
                     item[key] = 0
             if item.get("id"):
                 rows.append(item)
-        if rows:
-            return rows, "Synthetic CSV loaded. Validation passed."
-        return DEFAULT_DATA, "CSV did not include valid synthetic case rows. Default synthetic data active."
+        return (rows, "Synthetic CSV loaded. Validation passed.") if rows else (DEFAULT_DATA, "CSV did not include valid synthetic case rows. Default synthetic data active.")
     except Exception:
         return DEFAULT_DATA, "CSV could not be read. Default synthetic data active."
 
@@ -201,160 +188,116 @@ Workflow Loss Control Method asks: Where did the workflow first lose control?
 """
 
 def render_html(markup):
-    st.markdown(markup, unsafe_allow_html=True)
+    st.html(str(markup).strip())
 
 def chip(text):
     return f'<span class="chip">{esc(text)}</span>'
 
 def metric_card(label, value, note):
-    return f"""
-    <div class="metric-card">
-        <div class="eyebrow">{esc(label)}</div>
-        <div class="metric-number">{esc(value)}</div>
-        <div class="metric-note">{esc(note)}</div>
-    </div>
-    """
+    return f'<div class="metric-card"><div class="eyebrow">{esc(label)}</div><div class="metric-number">{esc(value)}</div><div class="metric-note">{esc(note)}</div></div>'
 
 def case_card(case):
-    missing = missing_docs(case)
-    miss_text = ", ".join(missing) if missing else "None detected"
-    status = stability_status(case)
-    return f"""
-    <div class="case-card">
-        <div class="case-title">{esc(case['id'])}</div>
-        <div class="case-meta">{esc(case['risk'])} • {esc(case['payer'])} • {esc(case['domain'])} • {esc(case['line'])}</div>
-        <div class="case-row"><strong>Owner:</strong> {esc(case['owner'])}</div>
-        <div class="case-row"><strong>Missing:</strong> {esc(miss_text)}</div>
-        <div class="case-row"><strong>Control Status:</strong> {esc(status)}</div>
-        <div class="case-row"><strong>Next:</strong> {esc(case['action'])}</div>
-    </div>
-    """
+    miss_text = ", ".join(missing_docs(case)) if missing_docs(case) else "None detected"
+    return f'<div class="case-card"><div class="case-title">{esc(case["id"])}</div><div class="case-meta">{esc(case["risk"])} • {esc(case["payer"])} • {esc(case["domain"])} • {esc(case["line"])}</div><div class="case-row"><strong>Owner:</strong> {esc(case["owner"])}</div><div class="case-row"><strong>Missing:</strong> {esc(miss_text)}</div><div class="case-row"><strong>Control Status:</strong> {esc(stability_status(case))}</div><div class="case-row"><strong>Next:</strong> {esc(case["action"])}</div></div>'
 
 def progress_row(label, value, max_value):
     pct = 0 if max_value == 0 else round(value / max_value * 100, 1)
-    return f"""
-    <div class="bar-row">
-        <div class="bar-label">{esc(label)}</div>
-        <div class="track"><div class="fill" style="width:{pct}%"></div></div>
-        <div class="bar-number">{esc(value)}</div>
-    </div>
-    """
+    return f'<div class="bar-row"><div class="bar-label">{esc(label)}</div><div class="track"><div class="fill" style="width:{pct}%"></div></div><div class="bar-number">{esc(value)}</div></div>'
 
 def record_table(rows):
-    header = """
-    <tr><th>Case ID</th><th>Payer Group</th><th>Workflow Domain</th><th>Service Line</th><th>Risk</th><th>Owner</th><th>SLA</th><th>Readiness</th></tr>
-    """
     body = ""
     for row in rows:
         _, sla_label, _ = sla_status(row)
-        body += f"""
-        <tr>
-            <td>{esc(row['id'])}</td><td>{esc(row['payer'])}</td><td>{esc(row['domain'])}</td><td>{esc(row['line'])}</td>
-            <td>{esc(row['risk'])}</td><td>{esc(row['owner'])}</td><td>{esc(sla_label)}</td><td>{readiness_score(row)}</td>
-        </tr>
-        """
-    return f'<div class="table-scroll"><table class="ops-table">{header}{body}</table></div>'
+        body += f'<tr><td>{esc(row["id"])}</td><td>{esc(row["payer"])}</td><td>{esc(row["domain"])}</td><td>{esc(row["line"])}</td><td>{esc(row["risk"])}</td><td>{esc(row["owner"])}</td><td>{esc(sla_label)}</td><td>{readiness_score(row)}</td></tr>'
+    return '<div class="table-scroll"><table class="ops-table"><tr><th>Case ID</th><th>Payer Group</th><th>Workflow Domain</th><th>Service Line</th><th>Risk</th><th>Owner</th><th>SLA</th><th>Readiness</th></tr>' + body + '</table></div>'
 
 render_html(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600;700&display=swap');
-:root {{ --orange: {TENNESSEE_ORANGE}; --black: {BLACK}; --white: {WHITE}; }}
-html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background: var(--white) !important; color: var(--black) !important; }}
-[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], #MainMenu, footer {{ visibility: hidden !important; height: 0 !important; }}
-button[title="View fullscreen"], button[title="Exit fullscreen"], [data-testid="collapsedControl"] {{ display: none !important; }}
-.block-container {{ max-width: 1120px !important; padding: 2.2rem 3.2rem 5rem 3.2rem !important; }}
-p, li, div, label, span {{ font-family: 'Inter', sans-serif; color: var(--black); }}
-h1, h2, h3 {{ font-family: 'Cormorant Garamond', Georgia, serif !important; font-weight: 300 !important; letter-spacing: -0.055em !important; color: var(--black) !important; }}
-.main-frame {{ border-left: 2px solid var(--black); border-right: 2px solid var(--black); padding: 2.5rem 3.3rem 4rem 3.3rem; background: var(--white); }}
-.signature-lockup {{ border-top: 14px solid var(--orange); padding: 2.7rem 0 2.4rem 0; border-bottom: 8px solid var(--orange); margin-bottom: 4.5rem; }}
-.signature-name {{ font-family: 'Allura', cursive; font-size: clamp(5.7rem, 17vw, 12.5rem); line-height: 0.68; color: var(--black); letter-spacing: -0.045em; white-space: nowrap; }}
-.signature-sub {{ font-size: clamp(1.0rem, 2.2vw, 1.25rem); letter-spacing: 0.58em; text-transform: uppercase; margin-top: 1.35rem; font-weight: 400; }}
-.signature-intel {{ color: var(--orange); letter-spacing: 0.74em; text-transform: uppercase; margin-top: 1rem; font-size: clamp(0.95rem, 2vw, 1.1rem); }}
-.brand-line {{ height: 10px; width: 100%; background: var(--orange); margin: 3rem 0 4rem 0; }}
-.eyebrow {{ font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.42em; font-weight: 700; margin-bottom: 1.1rem; }}
-.hero-title {{ font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300; font-size: clamp(5.6rem, 14vw, 12rem); line-height: 0.78; letter-spacing: -0.075em; margin: 2.5rem 0 2.3rem 0; max-width: 900px; }}
-.hero-title .orange {{ color: var(--orange); }}
-.lead {{ font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.75; font-weight: 300; max-width: 920px; margin: 2rem 0 2.1rem 0; }}
-.chip-wrap {{ display: flex; flex-wrap: wrap; gap: 1rem; margin: 2.7rem 0 4.5rem 0; }}
-.chip {{ display: inline-flex; align-items: center; min-height: 58px; border: 1.5px solid var(--black); border-left: 16px solid var(--orange); padding: 0 1.55rem; font-size: 0.88rem; letter-spacing: 0.34em; text-transform: uppercase; font-weight: 700; white-space: nowrap; background: var(--white); }}
-.identity-card, .section-card {{ border: 1.5px solid var(--black); border-top: 10px solid var(--orange); padding: clamp(2rem, 5vw, 4.5rem); margin: 3.8rem 0; background: var(--white); }}
-.identity-head {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(3.2rem, 8vw, 7rem); line-height: 0.88; letter-spacing: -0.07em; font-weight: 300; margin: 1rem 0 2.2rem 0; }}
-.orange-rule {{ width: min(440px, 70%); height: 7px; background: var(--orange); margin: 2.4rem 0; }}
-.identity-copy {{ font-size: clamp(1.25rem, 2.4vw, 1.65rem); line-height: 1.7; font-weight: 300; max-width: 850px; }}
-.domain-line {{ font-size: 1.02rem; letter-spacing: 0.36em; text-transform: uppercase; font-weight: 700; line-height: 2; margin-top: 2rem; }}
-.metric-grid {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.2rem; align-items: stretch; margin: 3rem 0 4rem 0; }}
-.metric-card {{ border: 1.5px solid var(--black); border-left: 16px solid var(--orange); padding: 2.2rem 1.9rem; min-height: 230px; display: flex; flex-direction: column; justify-content: center; background: var(--white); overflow: hidden; }}
-.metric-number {{ font-family: 'Cormorant Garamond', Georgia, serif; color: var(--orange); font-weight: 300; letter-spacing: -0.07em; font-size: clamp(4rem, 8vw, 7.2rem); line-height: 0.85; margin: 0.6rem 0 1.1rem 0; white-space: nowrap; }}
-.metric-note {{ font-size: 1.05rem; line-height: 1.45; font-weight: 300; }}
-.control-panel {{ border: 1.5px solid var(--black); border-top: 10px solid var(--orange); padding: 2rem; margin: 2rem 0 3rem 0; }}
-.module-title {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(4rem, 10vw, 8rem); line-height: 0.88; letter-spacing: -0.07em; font-weight: 300; margin: 3.5rem 0 1.8rem 0; }}
-.case-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 2rem 0; align-items: stretch; }}
-.case-card {{ border: 1.5px solid var(--black); border-left: 14px solid var(--orange); padding: 1.7rem 1.8rem; min-height: 300px; background: var(--white); overflow: hidden; }}
-.case-title {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(3.2rem, 6vw, 5.6rem); line-height: 0.9; letter-spacing: -0.06em; font-weight: 300; margin-bottom: 1rem; }}
-.case-meta {{ font-size: 0.78rem; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 700; margin-bottom: 1rem; line-height: 1.6; overflow-wrap: anywhere; }}
-.case-row {{ font-size: 1rem; line-height: 1.6; margin: 0.65rem 0; overflow-wrap: anywhere; }}
-.table-scroll {{ overflow-x: auto; border: 1.5px solid var(--black); margin: 2rem 0 3rem 0; width: 100%; background: var(--white); }}
-.ops-table {{ width: 100%; min-width: 920px; border-collapse: collapse; table-layout: fixed; }}
-.ops-table th {{ background: var(--orange); color: var(--black); text-align: left; font-size: 0.78rem; letter-spacing: 0.25em; text-transform: uppercase; padding: 1rem; border: 1px solid var(--black); }}
-.ops-table td {{ padding: 1rem; border: 1px solid var(--black); font-size: 0.95rem; line-height: 1.35; vertical-align: top; overflow-wrap: anywhere; }}
-.bar-box {{ border: 1.5px solid var(--black); border-top: 10px solid var(--orange); padding: 2rem; margin: 2.5rem 0; }}
-.bar-row {{ display: grid; grid-template-columns: 140px 1fr 70px; gap: 1.2rem; align-items: center; margin: 1.35rem 0; }}
-.bar-label {{ font-size: 1.25rem; font-weight: 300; }}
-.track {{ border: 1.5px solid var(--black); height: 28px; background: var(--white); }}
-.fill {{ height: 100%; background: var(--orange); }}
-.bar-number {{ font-family: 'Cormorant Garamond', Georgia, serif; font-size: 3rem; color: var(--orange); font-weight: 300; }}
-.footer-lockup {{ text-align: center; border-top: 8px solid var(--orange); border-bottom: 8px solid var(--orange); padding: 3rem 0; margin-top: 5rem; }}
-.footer-signature {{ font-family: 'Allura', cursive; font-size: clamp(4.2rem, 12vw, 8rem); line-height: 0.8; letter-spacing: -0.04em; }}
-.footer-text {{ font-size: 1.1rem; line-height: 1.7; max-width: 720px; margin: 1rem auto; }}
-.footer-links {{ display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }}
-.footer-link {{ border: 1.5px solid var(--black); border-left: 14px solid var(--orange); padding: 1rem 1.6rem; text-decoration: none !important; color: var(--black) !important; letter-spacing: 0.25em; text-transform: uppercase; font-weight: 700; }}
-.stButton>button, .stDownloadButton>button {{ background: var(--white) !important; color: var(--black) !important; border: 1.5px solid var(--black) !important; border-left: 14px solid var(--orange) !important; border-radius: 0 !important; font-weight: 700 !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; }}
-.stSelectbox div[data-baseweb="select"], .stMultiSelect div[data-baseweb="select"], .stTextArea textarea, .stTextInput input, .stNumberInput input {{ border-radius: 0 !important; border-color: var(--black) !important; }}
-@media (max-width: 900px) {{
-    .block-container {{ padding: 1rem 0.85rem 3rem 0.85rem !important; }}
-    .main-frame {{ padding: 1.2rem 1.05rem 2.5rem 1.05rem; border-left: 1.5px solid var(--black); border-right: 1.5px solid var(--black); }}
-    .signature-name {{ font-size: clamp(4.9rem, 18vw, 7rem); white-space: normal; line-height: 0.72; }}
-    .signature-sub, .signature-intel {{ letter-spacing: 0.42em; font-size: 0.9rem; }}
-    .hero-title {{ font-size: clamp(4.5rem, 17vw, 6.5rem); line-height: 0.82; }}
-    .lead {{ font-size: 1.17rem; line-height: 1.75; }}
-    .chip-wrap {{ gap: 0.75rem; }}
-    .chip {{ min-height: 50px; font-size: 0.72rem; letter-spacing: 0.26em; padding: 0 1rem; max-width: 100%; white-space: normal; }}
-    .identity-card, .section-card {{ padding: 2rem 1.35rem; margin: 2.5rem 0; }}
-    .metric-grid {{ grid-template-columns: 1fr; gap: 1rem; }}
-    .metric-card {{ min-height: 180px; padding: 1.7rem 1.55rem; }}
-    .case-grid {{ grid-template-columns: 1fr; gap: 1rem; }}
-    .case-card {{ min-height: 245px; padding: 1.55rem 1.35rem; }}
-    .bar-row {{ grid-template-columns: 90px 1fr 46px; gap: 0.8rem; }}
-    .track {{ height: 22px; }}
-    .bar-number {{ font-size: 2.3rem; }}
-    .module-title {{ font-size: clamp(3.4rem, 16vw, 5.6rem); }}
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@300;400&family=Inter:wght@300;400;500;600;700&display=swap');
+:root{{--orange:{TENNESSEE_ORANGE};--black:{BLACK};--white:{WHITE};}}
+html,body,[data-testid="stAppViewContainer"],[data-testid="stHeader"]{{background:var(--white)!important;color:var(--black)!important;overflow-x:hidden!important;}}
+[data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stDecoration"],[data-testid="stStatusWidget"],#MainMenu,footer,button[title="View fullscreen"],button[title="Exit fullscreen"],[data-testid="collapsedControl"]{{visibility:hidden!important;height:0!important;display:none!important;}}
+*{{box-sizing:border-box!important;}}
+.block-container{{max-width:1040px!important;padding:2rem 2.4rem 5rem!important;overflow-x:hidden!important;}}
+[data-testid="stVerticalBlock"], .element-container{{max-width:100%!important;}}
+p,li,div,label,span{{font-family:'Inter',sans-serif;color:var(--black);}}
+h1,h2,h3{{font-family:'Cormorant Garamond',Georgia,serif!important;font-weight:300!important;color:var(--black)!important;}}
+.main-frame{{border-left:2px solid var(--black);border-right:2px solid var(--black);padding:2.2rem 2.6rem 4rem;background:var(--white);overflow:hidden;}}
+.signature-lockup{{border-top:12px solid var(--orange);border-bottom:7px solid var(--orange);padding:2.4rem 0;margin:0 0 4rem;overflow:hidden;}}
+.signature-name{{font-family:'Allura',cursive;font-size:clamp(5.2rem,13vw,10rem);line-height:.72;color:var(--black);letter-spacing:-.035em;white-space:normal;overflow-wrap:normal;}}
+.signature-sub{{font-size:clamp(.9rem,1.9vw,1.15rem);letter-spacing:.56em;text-transform:uppercase;margin-top:1.5rem;font-weight:400;}}
+.signature-intel{{color:var(--orange);letter-spacing:.7em;text-transform:uppercase;margin-top:1rem;font-size:clamp(.85rem,1.8vw,1.05rem);}}
+.eyebrow{{font-size:.82rem;text-transform:uppercase;letter-spacing:.42em;font-weight:700;margin-bottom:1.05rem;line-height:1.8;}}
+.hero-title{{font-family:'Cormorant Garamond',Georgia,serif;font-weight:300;font-size:clamp(5rem,11vw,9rem);line-height:.82;letter-spacing:-.065em;margin:2.3rem 0;max-width:900px;overflow-wrap:normal;}}
+.orange{{color:var(--orange);}}
+.lead{{font-size:clamp(1.16rem,2vw,1.55rem);line-height:1.72;font-weight:300;max-width:880px;margin:1.8rem 0;}}
+.chip-wrap{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:2.5rem 0 4rem;max-width:760px;}}
+.chip{{display:flex;align-items:center;border:1.5px solid var(--black);border-left:15px solid var(--orange);min-height:56px;padding:0 1.2rem;font-size:.82rem;letter-spacing:.28em;text-transform:uppercase;font-weight:700;background:var(--white);overflow:hidden;}}
+.identity-card,.section-card{{border:1.5px solid var(--black);border-top:10px solid var(--orange);padding:clamp(2rem,4.5vw,4rem);margin:3.2rem 0;background:var(--white);overflow:hidden;}}
+.identity-head{{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(3.1rem,7vw,6rem);line-height:.9;letter-spacing:-.06em;font-weight:300;margin:1rem 0 2rem;}}
+.orange-rule{{width:min(420px,72%);height:6px;background:var(--orange);margin:2rem 0;}}
+.identity-copy{{font-size:clamp(1.18rem,2.2vw,1.5rem);line-height:1.65;font-weight:300;}}
+.domain-line{{font-size:.94rem;letter-spacing:.32em;text-transform:uppercase;font-weight:700;line-height:2;margin-top:2rem;}}
+.metric-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;align-items:stretch;margin:3rem 0 3.5rem;}}
+.metric-card{{border:1.5px solid var(--black);border-left:15px solid var(--orange);padding:1.8rem 1.35rem;min-height:220px;height:220px;background:var(--white);overflow:hidden;display:flex;flex-direction:column;justify-content:center;}}
+.metric-number{{font-family:'Cormorant Garamond',Georgia,serif;color:var(--orange);font-weight:300;letter-spacing:-.055em;font-size:clamp(3.6rem,6.8vw,5.8rem);line-height:.9;margin:.5rem 0 .9rem;white-space:nowrap;}}
+.metric-note{{font-size:1rem;line-height:1.42;font-weight:300;}}
+.module-title{{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(3.8rem,8vw,7rem);line-height:.9;letter-spacing:-.065em;font-weight:300;margin:3rem 0 1.6rem;}}
+.case-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:2rem 0;align-items:stretch;}}
+.case-card{{border:1.5px solid var(--black);border-left:14px solid var(--orange);padding:1.55rem;min-height:310px;height:310px;background:var(--white);overflow:hidden;}}
+.case-title{{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(3rem,5.5vw,4.8rem);line-height:.9;letter-spacing:-.055em;font-weight:300;margin-bottom:.9rem;white-space:nowrap;}}
+.case-meta{{font-size:.74rem;letter-spacing:.24em;text-transform:uppercase;font-weight:700;margin-bottom:.85rem;line-height:1.6;white-space:normal;overflow:hidden;}}
+.case-row{{font-size:.96rem;line-height:1.5;margin:.55rem 0;overflow:hidden;}}
+.table-scroll{{overflow-x:auto;border:1.5px solid var(--black);margin:2rem 0 3rem;width:100%;background:var(--white);}}
+.ops-table{{width:100%;min-width:920px;border-collapse:collapse;table-layout:fixed;}}
+.ops-table th{{background:var(--orange);color:var(--black);text-align:left;font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;padding:1rem;border:1px solid var(--black);}}
+.ops-table td{{padding:1rem;border:1px solid var(--black);font-size:.93rem;line-height:1.35;vertical-align:top;overflow-wrap:anywhere;}}
+.bar-box{{border:1.5px solid var(--black);border-top:10px solid var(--orange);padding:2rem;margin:2.4rem 0;background:var(--white);overflow:hidden;}}
+.bar-row{{display:grid;grid-template-columns:130px 1fr 58px;gap:1rem;align-items:center;margin:1.2rem 0;}}
+.bar-label{{font-size:1.15rem;font-weight:300;}}
+.track{{border:1.5px solid var(--black);height:26px;background:var(--white);}}
+.fill{{height:100%;background:var(--orange);}}
+.bar-number{{font-family:'Cormorant Garamond',Georgia,serif;font-size:2.8rem;color:var(--orange);font-weight:300;line-height:1;}}
+.footer-lockup{{text-align:center;border-top:8px solid var(--orange);border-bottom:8px solid var(--orange);padding:3rem 0;margin-top:5rem;overflow:hidden;}}
+.footer-signature{{font-family:'Allura',cursive;font-size:clamp(3.8rem,10vw,7rem);line-height:.8;letter-spacing:-.035em;}}
+.footer-text{{font-size:1.05rem;line-height:1.65;max-width:720px;margin:1rem auto;}}
+.footer-links{{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:2rem;}}
+.footer-link{{border:1.5px solid var(--black);border-left:14px solid var(--orange);padding:1rem 1.6rem;text-decoration:none!important;color:var(--black)!important;letter-spacing:.25em;text-transform:uppercase;font-weight:700;}}
+pre,code{{background:var(--white)!important;color:var(--black)!important;border:1.5px solid var(--orange)!important;}}
+.stButton>button,.stDownloadButton>button{{background:var(--white)!important;color:var(--black)!important;border:1.5px solid var(--black)!important;border-left:14px solid var(--orange)!important;border-radius:0!important;font-weight:700!important;letter-spacing:.12em!important;text-transform:uppercase!important;}}
+.stSelectbox div[data-baseweb="select"],.stMultiSelect div[data-baseweb="select"],.stTextArea textarea,.stTextInput input,.stNumberInput input{{border-radius:0!important;border:1.5px solid var(--black)!important;background:var(--white)!important;color:var(--black)!important;}}
+@media(max-width:900px){{
+.block-container{{padding:1rem .82rem 3rem!important;}}
+.main-frame{{padding:1.05rem .9rem 2.5rem;border-left:1.5px solid var(--black);border-right:1.5px solid var(--black);}}
+.signature-lockup{{padding:2rem 0;margin-bottom:3rem;}}
+.signature-name{{font-size:clamp(4.1rem,16vw,5.8rem);line-height:.78;}}
+.signature-sub,.signature-intel{{letter-spacing:.34em;font-size:.78rem;}}
+.eyebrow{{font-size:.7rem;letter-spacing:.3em;}}
+.hero-title{{font-size:clamp(4.0rem,15vw,5.7rem);line-height:.86;}}
+.lead{{font-size:1.05rem;line-height:1.7;}}
+.chip-wrap{{grid-template-columns:1fr;gap:.75rem;margin-bottom:3rem;}}
+.chip{{min-height:48px;font-size:.66rem;letter-spacing:.24em;padding:0 .9rem;}}
+.identity-card,.section-card{{padding:1.7rem 1.15rem;margin:2.4rem 0;}}
+.identity-head{{font-size:clamp(3rem,12vw,4.6rem);}}
+.domain-line{{font-size:.76rem;letter-spacing:.24em;}}
+.metric-grid{{grid-template-columns:1fr;gap:1rem;}}
+.metric-card{{height:188px;min-height:188px;padding:1.45rem 1.25rem;}}
+.metric-number{{font-size:4.1rem;}}
+.module-title{{font-size:clamp(3.4rem,13vw,5rem);line-height:.92;}}
+.case-grid{{grid-template-columns:1fr;gap:1rem;}}
+.case-card{{height:300px;min-height:300px;padding:1.35rem 1.15rem;}}
+.case-title{{font-size:3.45rem;}}
+.case-meta{{font-size:.66rem;letter-spacing:.2em;}}
+.case-row{{font-size:.92rem;}}
+.bar-row{{grid-template-columns:82px 1fr 42px;gap:.7rem;}}
+.track{{height:22px;}}
+.bar-number{{font-size:2.15rem;}}
+.footer-signature{{font-size:4.1rem;}}
 }}
 </style>
 """)
 
-render_html('<div class="main-frame">')
-
-render_html("""
-<div class="signature-lockup">
-    <div class="signature-name">Kori Pickle</div>
-    <div class="signature-sub">Healthcare Operations</div>
-    <div class="signature-intel">Intelligence</div>
-</div>
-<div class="eyebrow">Kori Pickle • Healthcare Operations Intelligence</div>
-<div class="hero-title">Enterprise<br>Revenue<br><span class="orange">Operations</span><br>Platform</div>
-<div class="lead">A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, routing intelligence, documentation readiness, denial prevention, payer friction analysis, and responsible operational intelligence.</div>
-<div class="lead">This build functions as an operational review workbench: filter synthetic cases, isolate ownership gaps, simulate stabilization impact, generate escalation language, and build a leadership brief from the active command view.</div>
-<div class="chip-wrap">
-    <span class="chip">No PHI</span><span class="chip">Synthetic Data</span><span class="chip">Human Review Required</span><span class="chip">Built by Kori Pickle</span>
-</div>
-<div class="identity-card">
-    <div class="eyebrow">Operational Identity</div>
-    <div class="identity-head">Workflow visibility before revenue damage.</div>
-    <div class="orange-rule"></div>
-    <div class="identity-copy">Designed around one question: where did the workflow first lose control?</div>
-    <div class="domain-line">Patient Access • Authorization Control • Documentation Readiness • Denial Prevention</div>
-</div>
-""")
+render_html('<div class="main-frame"><div class="signature-lockup"><div class="signature-name">Kori Pickle</div><div class="signature-sub">Healthcare Operations</div><div class="signature-intel">Intelligence</div></div><div class="eyebrow">Kori Pickle • Healthcare Operations Intelligence</div><div class="hero-title">Enterprise<br>Revenue<br><span class="orange">Operations</span><br>Platform</div><div class="lead">A premium synthetic no PHI healthcare operations command center for patient access, eligibility verification, prior authorization pressure tracking, routing intelligence, documentation readiness, denial prevention, payer friction analysis, and responsible operational intelligence.</div><div class="lead">This build functions as an operational review workbench: filter synthetic cases, isolate ownership gaps, simulate stabilization impact, generate escalation language, and build a leadership brief from the active command view.</div><div class="chip-wrap"><span class="chip">No PHI</span><span class="chip">Synthetic Data</span><span class="chip">Human Review Required</span><span class="chip">Built by Kori Pickle</span></div><div class="identity-card"><div class="eyebrow">Operational Identity</div><div class="identity-head">Workflow visibility before revenue damage.</div><div class="orange-rule"></div><div class="identity-copy">Designed around one question: where did the workflow first lose control?</div><div class="domain-line">Patient Access • Authorization Control • Documentation Readiness • Denial Prevention</div></div></div>')
 
 uploaded = st.file_uploader("Synthetic CSV upload only", type=["csv"], label_visibility="collapsed")
 rows, upload_message = parse_csv(uploaded)
@@ -379,26 +322,18 @@ if not filtered_rows:
     filtered_rows = rows
 
 total, high, sla, exposure, owners, avg_ready = summary(filtered_rows)
-render_html("<div class='metric-grid'>" +
-            metric_card("High Risk Records", high, "Prioritized operational review queue.") +
-            metric_card("SLA Pressure", sla, "Records aged at or above SLA limit.") +
-            metric_card("Synthetic Exposure", money(exposure), "Portfolio simulation only.") +
-            metric_card("Readiness Average", avg_ready, "Aggregate workflow readiness score.") +
-            "</div>")
+render_html('<div class="main-frame"><div class="metric-grid">' + metric_card("High Risk Records", high, "Prioritized operational review queue.") + metric_card("SLA Pressure", sla, "Records aged at or above SLA limit.") + metric_card("Synthetic Exposure", money(exposure), "Portfolio simulation only.") + metric_card("Readiness Average", avg_ready, "Aggregate workflow readiness score.") + '</div></div>')
 
-modules = [
-    "Command Center", "Case Review Workbench", "Workflow Loss Control Method", "Authorization Readiness Engine",
-    "Missing Documentation Detector", "SLA Countdown", "Human Review Log", "Executive Brief Builder",
-    "About Kori", "Stabilization Simulator", "2027 API Checklist"
-]
+modules = ["Command Center", "Case Review Workbench", "Workflow Loss Control Method", "Authorization Readiness Engine", "Missing Documentation Detector", "SLA Countdown", "Human Review Log", "Executive Brief Builder", "About Kori", "Stabilization Simulator", "2027 API Checklist"]
 module = st.selectbox("Select module", modules, index=0)
 case_ids = [row["id"] for row in filtered_rows]
 selected_id = st.selectbox("Select synthetic case for review", case_ids, index=0)
 selected_case = next(row for row in filtered_rows if row["id"] == selected_id)
 
+render_html('<div class="main-frame">')
+
 if module == "Command Center":
-    render_html('<div class="module-title">Live Command Center</div>')
-    render_html('<div class="lead">Use the filters above to isolate operational pressure across payer group, workflow domain, service line, and risk level.</div>')
+    render_html('<div class="module-title">Live Command Center</div><div class="lead">Use the filters above to isolate operational pressure across payer group, workflow domain, service line, and risk level.</div>')
     render_html('<div class="case-grid">' + ''.join(case_card(row) for row in filtered_rows) + '</div>')
     render_html(record_table(filtered_rows))
     risk_counts = Counter(row["risk"] for row in filtered_rows)
@@ -407,52 +342,32 @@ if module == "Command Center":
     render_html(f'<div class="section-card"><div class="module-title" style="margin-top:0;">Executive Interpretation</div><div class="identity-copy">The active view shows {total} synthetic records, {high} high risk records, {sla} SLA pressure signals, {owners} distinct owners, average readiness of {avg_ready}, and {money(exposure)} in simulated exposure. These are prioritization signals for human review, not automated payer or clinical decisions.</div></div>')
 
 elif module == "Case Review Workbench":
-    render_html('<div class="module-title">Case Review Workbench</div>')
-    render_html(case_card(selected_case))
     remaining, sla_label, timing = sla_status(selected_case)
-    render_html(f"""
-    <div class="section-card">
-        <div class="eyebrow">Selected Case Operating Pathway</div>
-        <div class="case-row"><strong>What failed:</strong> {esc(first_failed_domain(selected_case))}</div>
-        <div class="case-row"><strong>Where it failed:</strong> {esc(selected_case['domain'])}</div>
-        <div class="case-row"><strong>Why it matters:</strong> {esc(selected_case['rule'])}</div>
-        <div class="case-row"><strong>Who owns it:</strong> {esc(selected_case['owner'])}</div>
-        <div class="case-row"><strong>SLA status:</strong> {esc(sla_label)} • {abs(remaining)} day(s) {'past SLA' if remaining < 0 else 'remaining'}</div>
-        <div class="case-row"><strong>Escalation timing:</strong> {esc(timing)}</div>
-        <div class="case-row"><strong>Leadership should know:</strong> This record needs human review because workflow control is unstable before downstream revenue or access impact occurs.</div>
-    </div>
-    """)
+    render_html('<div class="module-title">Case Review Workbench</div>' + case_card(selected_case) + f'<div class="section-card"><div class="eyebrow">Selected Case Operating Pathway</div><div class="case-row"><strong>What failed:</strong> {esc(first_failed_domain(selected_case))}</div><div class="case-row"><strong>Where it failed:</strong> {esc(selected_case["domain"])}</div><div class="case-row"><strong>Why it matters:</strong> {esc(selected_case["rule"])}</div><div class="case-row"><strong>Who owns it:</strong> {esc(selected_case["owner"])}</div><div class="case-row"><strong>SLA status:</strong> {esc(sla_label)} • {abs(remaining)} day(s) {"past SLA" if remaining < 0 else "remaining"}</div><div class="case-row"><strong>Escalation timing:</strong> {esc(timing)}</div><div class="case-row"><strong>Leadership should know:</strong> This record needs human review because workflow control is unstable before downstream revenue or access impact occurs.</div></div>')
     note = st.text_area("Human review note", placeholder="Document reviewer observation, action taken, escalation status, and follow-up date.")
     if note:
         st.success("Human review note captured for this session. Do not enter PHI.")
 
 elif module == "Workflow Loss Control Method":
-    render_html('<div class="module-title">Workflow Loss Control Method™</div>')
-    render_html('<div class="lead">Kori Pickle’s original method identifies where front-end revenue cycle control was first lost before the issue becomes a denial, access delay, rework burden, or payer escalation.</div>')
     scores = wlcm_scores(selected_case)
-    max_score = 100
-    render_html('<div class="bar-box"><div class="eyebrow">Five Control Domains</div>' + ''.join(progress_row(domain, int(score), max_score) for domain, score in scores.items()) + '</div>')
-    render_html(f'<div class="section-card"><div class="case-row"><strong>First failed control domain:</strong> {esc(first_failed_domain(selected_case))}</div><div class="case-row"><strong>Stability status:</strong> {esc(stability_status(selected_case))}</div><div class="case-row"><strong>Required action:</strong> {esc(selected_case["action"])}</div></div>')
+    render_html('<div class="module-title">Workflow Loss Control Method™</div><div class="lead">Kori Pickle’s original method identifies where front-end revenue cycle control was first lost before the issue becomes a denial, access delay, rework burden, or payer escalation.</div><div class="bar-box"><div class="eyebrow">Five Control Domains</div>' + ''.join(progress_row(domain, int(score), 100) for domain, score in scores.items()) + f'</div><div class="section-card"><div class="case-row"><strong>First failed control domain:</strong> {esc(first_failed_domain(selected_case))}</div><div class="case-row"><strong>Stability status:</strong> {esc(stability_status(selected_case))}</div><div class="case-row"><strong>Required action:</strong> {esc(selected_case["action"])}</div></div>')
 
 elif module == "Authorization Readiness Engine":
     factors, score, status = auth_readiness(selected_case)
-    render_html('<div class="module-title">Authorization Readiness Engine</div>')
-    render_html(metric_card("Authorization Readiness", f"{score}%", status))
     rows_html = ''.join(f'<div class="case-row"><strong>{esc(name)}:</strong> {"Met" if value else "Gap"}</div>' for name, value in factors.items())
-    render_html(f'<div class="section-card"><div class="eyebrow">Readiness Factors</div>{rows_html}</div>')
+    render_html('<div class="module-title">Authorization Readiness Engine</div>' + metric_card("Authorization Readiness", f"{score}%", status) + f'<div class="section-card"><div class="eyebrow">Readiness Factors</div>{rows_html}</div>')
 
 elif module == "Missing Documentation Detector":
     missing = missing_docs(selected_case)
     render_html('<div class="module-title">Missing Documentation Detector</div>')
     if missing:
-        render_html('<div class="section-card"><div class="eyebrow">Detected Documentation Gaps</div>' + ''.join(chip(item) for item in missing) + f'<div class="lead">Operational impact: {esc(selected_case["rule"])}</div><div class="case-row"><strong>Next action:</strong> {esc(selected_case["action"])}</div><div class="case-row"><strong>Owner:</strong> {esc(selected_case["owner"])}</div></div>')
+        render_html('<div class="section-card"><div class="eyebrow">Detected Documentation Gaps</div><div class="chip-wrap">' + ''.join(chip(item) for item in missing) + f'</div><div class="lead">Operational impact: {esc(selected_case["rule"])}</div><div class="case-row"><strong>Next action:</strong> {esc(selected_case["action"])}</div><div class="case-row"><strong>Owner:</strong> {esc(selected_case["owner"])}</div></div>')
     else:
         render_html('<div class="section-card"><div class="identity-copy">No missing documentation detected for this synthetic case.</div></div>')
 
 elif module == "SLA Countdown":
     remaining, sla_label, timing = sla_status(selected_case)
-    render_html('<div class="module-title">SLA Breach Countdown</div>')
-    render_html("<div class='metric-grid'>" + metric_card("Days Open", selected_case["days"], "Current aging") + metric_card("SLA Limit", selected_case["sla"], "Operational threshold") + metric_card("SLA Status", sla_label, timing) + metric_card("Days Delta", abs(remaining), "Past SLA" if remaining < 0 else "Remaining") + "</div>")
+    render_html('<div class="module-title">SLA Breach Countdown</div><div class="metric-grid">' + metric_card("Days Open", selected_case["days"], "Current aging") + metric_card("SLA Limit", selected_case["sla"], "Operational threshold") + metric_card("SLA Status", sla_label, timing) + metric_card("Days Delta", abs(remaining), "Past SLA" if remaining < 0 else "Remaining") + '</div>')
 
 elif module == "Human Review Log":
     render_html('<div class="module-title">Human Review Log</div>')
@@ -464,47 +379,25 @@ elif module == "Human Review Log":
     st.download_button("Download Human Review Log Entry", f"Reviewer: {reviewer}\nDate: {date.today()}\nCase: {selected_case['id']}\nAction: {action_taken}\nStatus: {decision_status}\nNotes: {notes}\nFollow up: {follow_date}\n", file_name="human_review_log_entry.txt")
 
 elif module == "Executive Brief Builder":
-    render_html('<div class="module-title">Executive Brief Builder</div>')
     brief = executive_brief(filtered_rows)
+    render_html('<div class="module-title">Executive Brief Builder</div>')
     st.text_area("Leadership brief generated from the active command view", brief, height=420)
     st.download_button("Download Executive Brief", brief, file_name="kori_pickle_executive_brief.txt")
 
 elif module == "About Kori":
-    render_html("""
-    <div class="module-title">About Kori</div>
-    <div class="section-card">
-        <div class="eyebrow">Professional Portfolio Positioning</div>
-        <div class="identity-copy">Kori Pickle is a BSHA candidate focused on healthcare operations, revenue cycle workflow analysis, patient access, prior authorization readiness, denial prevention, documentation readiness, health informatics, and workflow visibility. Her work is shaped by a patient-to-professional perspective and a practical interest in how upstream operational breakdowns become downstream delays, rework, denials, and patient access friction.</div>
-        <div class="orange-rule"></div>
-        <div class="case-row"><strong>Current academic standing:</strong> 99 of 120 credits completed • GPA 3.6</div>
-        <div class="case-row"><strong>Core focus:</strong> healthcare operations intelligence, front-end revenue cycle control, authorization readiness, workflow stabilization, responsible human review</div>
-        <div class="case-row"><strong>Portfolio statement:</strong> This public platform demonstrates synthetic operational logic only. It does not process PHI or replace payer, billing, coding, or clinical judgment.</div>
-    </div>
-    """)
+    render_html('<div class="module-title">About Kori</div><div class="section-card"><div class="eyebrow">Professional Portfolio Positioning</div><div class="identity-copy">Kori Pickle is a BSHA candidate focused on healthcare operations, revenue cycle workflow analysis, patient access, prior authorization readiness, denial prevention, documentation readiness, health informatics, and workflow visibility. Her work is shaped by a patient-to-professional perspective and a practical interest in how upstream operational breakdowns become downstream delays, rework, denials, and patient access friction.</div><div class="orange-rule"></div><div class="case-row"><strong>Current academic standing:</strong> 99 of 120 credits completed • GPA 3.6</div><div class="case-row"><strong>Core focus:</strong> healthcare operations intelligence, front-end revenue cycle control, authorization readiness, workflow stabilization, responsible human review</div><div class="case-row"><strong>Portfolio statement:</strong> This public platform demonstrates synthetic operational logic only. It does not process PHI or replace payer, billing, coding, or clinical judgment.</div></div>')
 
 elif module == "Stabilization Simulator":
-    render_html('<div class="module-title">Before-and-After Stabilization Simulator</div>')
     closure_gain = st.slider("Documentation gap closure target", 0, 100, 45)
     follow_gain = st.slider("Follow-up reliability improvement", 0, 100, 35)
     new_score = min(100, round(avg_ready + closure_gain * 0.28 + follow_gain * 0.18, 1))
     avoided = int(exposure * (new_score - avg_ready) / 100)
-    render_html("<div class='metric-grid'>" + metric_card("Current Readiness", avg_ready, "Active filtered view") + metric_card("Projected Readiness", new_score, "After stabilization") + metric_card("Exposure Stabilized", money(max(0, avoided)), "Synthetic estimate") + metric_card("Leadership Focus", common_missing(filtered_rows), "Most common gap") + "</div>")
+    render_html('<div class="module-title">Before-and-After Stabilization Simulator</div><div class="metric-grid">' + metric_card("Current Readiness", avg_ready, "Active filtered view") + metric_card("Projected Readiness", new_score, "After stabilization") + metric_card("Exposure Stabilized", money(max(0, avoided)), "Synthetic estimate") + metric_card("Leadership Focus", common_missing(filtered_rows), "Most common gap") + '</div>')
 
 elif module == "2027 API Checklist":
     render_html('<div class="module-title">2027 API Readiness Checklist</div>')
     items = ["Synthetic data governance", "No PHI public deployment", "Human review workflow", "Audit log structure", "Payer route field", "Authorization status field", "Documentation gap field", "SLA timestamp field", "Owner assignment field", "Exportable leadership brief"]
-    checked = []
-    for item in items:
-        if st.checkbox(item, value=True):
-            checked.append(item)
+    checked = [item for item in items if st.checkbox(item, value=True)]
     render_html(metric_card("API Readiness", f"{len(checked)} / {len(items)}", "Portfolio maturity checklist"))
 
-render_html(f"""
-<div class="footer-lockup">
-    <div class="eyebrow">Created by Kori Pickle</div>
-    <div class="footer-signature">Kori Pickle</div>
-    <div class="footer-text">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</div>
-    <div class="footer-links"><a class="footer-link" href="{LINKEDIN_URL}" target="_blank">LinkedIn</a><a class="footer-link" href="{GITHUB_URL}" target="_blank">GitHub</a></div>
-</div>
-""")
-render_html('</div>')
+render_html(f'<div class="footer-lockup"><div class="eyebrow">Created by Kori Pickle</div><div class="footer-signature">Kori Pickle</div><div class="footer-text">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</div><div class="footer-links"><a class="footer-link" href="{LINKEDIN_URL}" target="_blank">LinkedIn</a><a class="footer-link" href="{GITHUB_URL}" target="_blank">GitHub</a></div></div></div>')

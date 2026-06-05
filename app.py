@@ -10,7 +10,7 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=Great+Vibes&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;500;600;700;800;900&family=Great+Vibes&display=swap');
 
 html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
     background: rgb(255,255,255) !important;
@@ -18,27 +18,26 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
     font-family: Inter, sans-serif !important;
 }
 
-[data-testid="stSidebar"] {
-    background: rgb(255,255,255) !important;
-    color: rgb(0,0,0) !important;
-    border-right: 4px solid rgb(255,130,0) !important;
-}
-
 .block-container {
     padding-top: 2rem !important;
     padding-left: 5rem !important;
     padding-right: 5rem !important;
-    max-width: 1560px !important;
+    max-width: 1550px !important;
 }
 
 h1, h2, h3 {
     font-family: "Playfair Display", Georgia, serif !important;
     color: rgb(0,0,0) !important;
-    letter-spacing: -0.055em !important;
+    letter-spacing: -0.05em !important;
 }
 
-p, li, label, span, div {
+p, div, label, span {
     font-family: Inter, sans-serif;
+}
+
+[data-testid="stSidebar"] {
+    background: rgb(255,255,255) !important;
+    border-right: 4px solid rgb(255,130,0) !important;
 }
 
 div[data-baseweb="select"] > div,
@@ -50,7 +49,7 @@ textarea {
     border-radius: 18px !important;
 }
 
-span[data-baseweb="tag"], span[data-baseweb="tag"] span, [data-baseweb="tag"] {
+span[data-baseweb="tag"], [data-baseweb="tag"] {
     background: rgb(255,130,0) !important;
     color: rgb(0,0,0) !important;
     border: 2px solid rgb(0,0,0) !important;
@@ -145,7 +144,9 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] span, [data-baseweb="tag"] {
     margin-bottom: 1rem;
 }
 
-.black-card .kicker { color: rgb(255,255,255); }
+.black-card .kicker {
+    color: rgb(255,255,255);
+}
 
 .hero-title {
     font-family: "Playfair Display", Georgia, serif;
@@ -157,7 +158,9 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] span, [data-baseweb="tag"] {
     color: rgb(0,0,0);
 }
 
-.orange { color: rgb(255,130,0); }
+.orange {
+    color: rgb(255,130,0);
+}
 
 .orange-line {
     width: 220px;
@@ -306,7 +309,9 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] span, [data-baseweb="tag"] {
     text-transform: uppercase;
 }
 
-.icon-pill:hover { background: rgb(255,130,0); }
+.icon-pill:hover {
+    background: rgb(255,130,0);
+}
 
 [data-testid="stDataFrame"] {
     border: 3px solid rgb(0,0,0);
@@ -314,7 +319,9 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] span, [data-baseweb="tag"] {
     overflow: hidden;
 }
 
-[data-testid="stMainMenu"], footer { visibility: hidden; }
+[data-testid="stMainMenu"], footer {
+    visibility: hidden;
+}
 
 @media (max-width: 950px) {
     .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
@@ -459,4 +466,3 @@ with tab_e:
     st.dataframe(boundary, hide_index=True, use_container_width=True)
 
 st.markdown('<div class="panel" style="text-align:center; margin-top:3rem;"><div class="kicker">Created by Kori Pickle</div><div class="signature">Kori Pickle</div><p style="color:rgb(0,0,0); font-weight:800;">Healthcare Operations Intelligence • Revenue Cycle • Patient Access • Prior Authorization • Denial Prevention</p><a class="icon-pill" href="https://www.linkedin.com" target="_blank">in LinkedIn</a><a class="icon-pill" href="https://github.com/koripickle1101-TN" target="_blank">GitHub</a></div>', unsafe_allow_html=True)
-"""
